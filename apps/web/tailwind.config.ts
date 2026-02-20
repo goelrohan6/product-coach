@@ -9,17 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        surface: "var(--color-surface)",
+        text: "var(--color-text-primary)",
+        muted: "var(--color-text-secondary)",
+        border: "var(--color-border)",
+        accent: "var(--color-accent)",
+        accentAlt: "var(--color-accent-alt)",
+        focus: "var(--color-focus)",
         coach: {
-          bg: "#f8f7f2",
-          text: "#1f2a2a",
-          card: "#ffffff",
-          accent: "#0e7a6f",
-          accentAlt: "#ff7b2c",
-          muted: "#5f6b6b"
+          bg: "var(--color-bg)",
+          text: "var(--color-text-primary)",
+          card: "var(--color-surface)",
+          accent: "var(--color-accent)",
+          accentAlt: "var(--color-accent-alt)",
+          muted: "var(--color-text-secondary)"
         }
       },
       boxShadow: {
-        card: "0 12px 28px rgba(16, 42, 41, 0.08)"
+        card: "var(--shadow-sm)"
       },
       keyframes: {
         rise: {
@@ -32,8 +39,8 @@ const config: Config = {
         }
       },
       animation: {
-        rise: "rise 300ms ease-out",
-        pulseGlow: "pulseGlow 2.2s infinite"
+        rise: "rise var(--dur-normal) var(--ease-standard)",
+        pulseGlow: "pulseGlow 2.2s var(--ease-standard) infinite"
       }
     }
   },

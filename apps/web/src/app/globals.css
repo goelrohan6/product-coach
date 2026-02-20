@@ -3,14 +3,67 @@
 @tailwind utilities;
 
 :root {
-  --font-heading: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-body: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-  --bg: #f8f7f2;
-  --text: #1f2a2a;
-  --card: #ffffff;
-  --accent: #0e7a6f;
-  --accent-alt: #ff7b2c;
-  --line: #d9e0df;
+  --font-sans: var(--font-inter), "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-inter), "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Consolas, monospace;
+
+  --color-bg: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f7f7f4;
+  --color-border: #d8d9d4;
+  --color-border-light: #e8e9e4;
+  --color-text-primary: #1e2728;
+  --color-text-secondary: #4f5c5e;
+  --color-text-tertiary: #6d7678;
+  --color-accent: #0e7a6f;
+  --color-accent-alt: #ff7b2c;
+  --color-focus: #2e79e9;
+  --color-danger: #bc101c;
+  --color-accent-soft: #eef8f6;
+  --color-accent-soft-border: #cfe3df;
+  --color-accent-alt-soft: #fff4ec;
+  --color-accent-alt-soft-border: #f3dac8;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 16px;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-normal: 200ms;
+
+  --shadow-xs:
+    0 0 0 1px rgba(23, 34, 35, 0.05),
+    0 1px 2px rgba(23, 34, 35, 0.04),
+    0 6px 10px rgba(23, 34, 35, 0.04);
+  --shadow-sm:
+    0 0 0 1px rgba(23, 34, 35, 0.04),
+    0 2px 6px rgba(23, 34, 35, 0.05),
+    0 16px 30px rgba(23, 34, 35, 0.07);
 }
 
 * {
@@ -21,34 +74,79 @@ html,
 body {
   margin: 0;
   padding: 0;
-  color: var(--text);
+  color: var(--color-text-primary);
   background:
-    radial-gradient(circle at 10% 15%, rgba(255, 123, 44, 0.17), transparent 40%),
-    radial-gradient(circle at 88% 8%, rgba(14, 122, 111, 0.14), transparent 35%),
-    linear-gradient(180deg, #fdfcf8 0%, var(--bg) 65%);
+    radial-gradient(circle at 12% 16%, rgba(255, 123, 44, 0.12), transparent 42%),
+    radial-gradient(circle at 86% 10%, rgba(14, 122, 111, 0.11), transparent 36%),
+    linear-gradient(180deg, #fbfbf9 0%, var(--color-bg) 70%);
   min-height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: linear-gradient(to bottom, rgba(30, 39, 40, 0.02), rgba(30, 39, 40, 0));
 }
 
 a {
   color: inherit;
 }
 
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
 }
 
-.coach-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: 0 12px 28px rgba(16, 42, 41, 0.08);
-  border-radius: 16px;
+.coach-input,
+.coach-textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
 }
 
-.metric-pill {
-  border: 1px solid #cde2df;
-  background: #f2fbf9;
-  color: #16514a;
+.coach-input:hover,
+.coach-textarea:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.coach-input:focus,
+.coach-textarea:focus {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 2px rgba(46, 121, 233, 0.16);
+}
+
+.coach-input::placeholder,
+.coach-textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.coach-mono {
+  font-family: var(--font-mono);
+}
+
+.coach-heading {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }

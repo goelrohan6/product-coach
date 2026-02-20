@@ -11,6 +11,7 @@ import type {
   WeaknessSignal
 } from "@coach/core-types";
 import { fetchJson } from "@/lib/http";
+import { Button, Card, Pill, ProgressBar, Tabs } from "@/components/ui";
 
 type StartCaseResponse = {
   session: CaseSession;
@@ -185,90 +186,88 @@ export function CoachApp() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-col gap-4 p-4 pb-10 md:p-8">
-      <header className="coach-card animate-rise p-5 md:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1120px] flex-col gap-6 p-4 pb-12 md:p-10">
+      <Card variant="elevated" padding="lg" className="animate-rise overflow-hidden">
+        <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-[color:rgba(14,122,111,0.14)] blur-2xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-[color:rgba(255,123,44,0.14)] blur-2xl" />
+        <div className="flex flex-col gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-coach-accent">Executive Product Coach</p>
-            <h1 className="text-2xl font-semibold md:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>
+            <p className="coach-mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">
+              Executive Product Coach
+            </p>
+            <h1 className="coach-heading text-[34px] leading-[1.05] font-semibold md:text-[44px] md:whitespace-nowrap">
               Build World-Class Product Judgment
             </h1>
-            <p className="mt-1 text-sm text-coach-muted">
+            <p className="mt-2 max-w-[56ch] text-[var(--text-lg)] text-[var(--color-text-secondary)]">
               Mixed B2B real-world scenarios, rigorous evaluation, and progression gates.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="metric-pill rounded-full px-4 py-2 text-sm">
-              XP: <strong>{progress?.xp ?? 0}</strong>
-            </div>
-            <div className="metric-pill rounded-full px-4 py-2 text-sm">
-              Level: <strong>{progress?.level ?? 1}</strong>
-            </div>
-            <div className="metric-pill rounded-full px-4 py-2 text-sm">
-              Streak: <strong>{progress?.streakDays ?? 0}d</strong>
+          <div className="flex justify-start md:justify-end">
+            <div className="flex flex-wrap gap-2 md:flex-nowrap">
+              <Pill variant="accent" className="whitespace-nowrap font-medium">
+                XP:&nbsp;<span className="font-medium">{progress?.xp ?? 0}</span>
+              </Pill>
+              <Pill variant="accent" className="whitespace-nowrap font-medium">
+                Level:&nbsp;<span className="font-medium">{progress?.level ?? 1}</span>
+              </Pill>
+              <Pill variant="accent" className="whitespace-nowrap font-medium">
+                Streak:&nbsp;<span className="font-medium">{progress?.streakDays ?? 0}d</span>
+              </Pill>
             </div>
           </div>
         </div>
-      </header>
+      </Card>
 
-      <section className="flex flex-wrap gap-2">
-        {tabs.map((tab) => (
-          <button
-            type="button"
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              activeTab === tab.id
-                ? "bg-coach-accent text-white"
-                : "border border-[#cdd9d8] bg-white text-coach-muted hover:border-coach-accent"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </section>
+      <Tabs options={tabs} activeId={activeTab} onSelect={setActiveTab} className="w-fit max-w-full" />
 
       {error && (
-        <section className="coach-card border border-[#e6b9aa] bg-[#fff8f5] p-4 text-sm text-[#9d391d]">
-          {error}
-        </section>
+        <Card
+          variant="subtle"
+          padding="sm"
+          className="border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-accent-alt)]"
+        >
+          <p className="text-[var(--text-base)]">{error}</p>
+        </Card>
       )}
 
       {activeTab === "mission" && (
-        <section className="coach-card animate-rise p-4 md:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-              12-Week Mission Map
-            </h2>
-            <button
-              type="button"
+        <Card variant="default" padding="lg" className="animate-rise">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="coach-heading text-[30px] font-semibold leading-none">12-Week Mission Map</h2>
+            <Button
               onClick={() => startCase()}
-              className="rounded-lg bg-coach-accentAlt px-4 py-2 text-sm font-semibold text-white"
+              className="bg-[var(--color-accent-alt)] hover:brightness-95 focus-visible:outline-[var(--color-focus)]"
             >
               Start Recommended Case
-            </button>
+            </Button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {curriculum.map((week) => {
               const wp = progress?.weekProgress.find((entry) => entry.week === week.week);
               const completion = wp ? `${wp.completedCases}/5` : "0/5";
+              const selected = selectedWeek === week.week;
 
               return (
                 <button
                   type="button"
                   key={week.week}
                   onClick={() => setSelectedWeek(week.week)}
-                  className={`rounded-xl border p-4 text-left transition ${
-                    selectedWeek === week.week
-                      ? "border-coach-accent bg-[#f2fbf9]"
-                      : "border-[#d8e1df] bg-white hover:border-coach-accentAlt"
-                  }`}
+                  className={[
+                    "group rounded-[var(--radius-xl)] border p-4 text-left transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
+                    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
+                    selected
+                      ? "border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)]"
+                      : "border-[color:var(--color-border)] bg-[var(--color-surface)] hover:-translate-y-[1px] hover:bg-[var(--color-surface-hover)]"
+                  ].join(" ")}
                 >
-                  <p className="text-xs uppercase tracking-[0.15em] text-coach-muted">Week {week.week}</p>
-                  <p className="mt-1 font-semibold text-coach-text">{week.title}</p>
-                  <p className="mt-2 text-sm text-coach-muted">Progress: {completion}</p>
-                  <p className="mt-1 text-xs text-coach-muted">
+                  <span className="mb-3 block h-[2px] w-10 rounded-full bg-[var(--color-border-light)] transition-colors group-hover:bg-[var(--color-accent-soft-border)]" />
+                  <p className="text-[var(--text-xs)] uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">
+                    Week {week.week}
+                  </p>
+                  <p className="mt-1 text-[17px] font-semibold leading-[1.25] text-[var(--color-text-primary)]">{week.title}</p>
+                  <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">Progress: {completion}</p>
+                  <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-tertiary)]">
                     Boss: {wp?.bossUnlocked ? (wp.bossCompleted ? "Completed" : "Unlocked") : "Locked"}
                   </p>
                 </button>
@@ -277,77 +276,74 @@ export function CoachApp() {
           </div>
 
           {selectedWeekData && (
-            <div className="mt-5 rounded-xl border border-[#d8e1df] p-4">
-              <h3 className="font-semibold">Week {selectedWeekData.week} Cases</h3>
+            <Card variant="subtle" padding="md" className="mt-6">
+              <h3 className="coach-heading text-[24px] font-semibold leading-none">Week {selectedWeekData.week} Cases</h3>
               <div className="mt-3 grid gap-2">
                 {selectedWeekData.cases.map((item) => (
                   <div
                     key={item.id}
-                    className="flex flex-col gap-2 rounded-lg border border-[#deebe8] p-3 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3.5 md:flex-row md:items-center md:justify-between"
                   >
                     <div>
-                      <p className="text-sm font-semibold">{item.title}</p>
-                      <p className="text-xs text-coach-muted">
+                      <p className="text-[var(--text-base)] font-semibold">{item.title}</p>
+                      <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
                         {item.company} ({item.year}) • {item.caseType}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => startCase(item.id)}
-                      className="rounded-md bg-coach-accent px-3 py-2 text-sm font-medium text-white"
-                    >
+                    <Button size="sm" onClick={() => startCase(item.id)}>
                       Start Challenge
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
-        </section>
+        </Card>
       )}
 
       {activeTab === "chat" && (
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="coach-card animate-rise p-4 md:p-6">
+          <Card variant="default" padding="lg" className="animate-rise">
             <div className="mb-3 flex items-start justify-between gap-3">
-              <h2 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                Challenge Chat
-              </h2>
-              <label className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-coach-muted">
+              <h2 className="coach-heading text-[28px] font-semibold leading-none">Challenge Chat</h2>
+              <label className="flex items-center gap-2 text-[var(--text-xs)] uppercase tracking-[0.14em] text-[var(--color-text-tertiary)]">
                 <input
                   type="checkbox"
                   checked={timedMode}
                   onChange={(e) => setTimedMode(e.target.checked)}
-                  className="h-4 w-4"
+                  className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-accent)]"
                 />
                 Timed Mode
               </label>
             </div>
 
             {!activeSession || !activeScenario ? (
-              <div className="rounded-xl border border-dashed border-[#b6cbc8] p-4 text-sm text-coach-muted">
+              <div className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--color-border)] p-4 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                 Start a case from Mission Map to begin chat coaching.
               </div>
             ) : (
               <>
-                <div className="rounded-xl border border-[#d2dfdd] bg-[#f9fcfb] p-3 text-sm">
-                  <p className="font-semibold text-coach-text">{activeScenario.title}</p>
-                  <p className="mt-1 text-coach-muted">{activeScenario.scenario}</p>
-                </div>
+                <Card variant="subtle" padding="sm">
+                  <p className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{activeScenario.title}</p>
+                  <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">{activeScenario.scenario}</p>
+                </Card>
 
-                <div className="mt-4 max-h-[360px] space-y-3 overflow-y-auto rounded-xl border border-[#d8e5e3] p-3">
+                <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] p-3">
                   {activeSession.turns
                     .filter((turn) => turn.role !== "system")
                     .map((turn, idx) => (
                       <div
                         key={`${turn.timestamp}-${idx}`}
-                        className={`rounded-lg p-3 text-sm ${
+                        className={[
+                          "rounded-[var(--radius-lg)] border p-3.5 text-[var(--text-base)]",
                           turn.role === "user"
-                            ? "ml-6 bg-[#e9f6f4] text-[#0f3e39]"
-                            : "mr-6 bg-[#fff3ea] text-[#5d2f11]"
-                        }`}
+                            ? "ml-6 border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
+                            : "mr-6 border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-text-primary)]"
+                        ].join(" ")}
                       >
-                        <p className="mb-1 text-[11px] uppercase tracking-[0.12em] opacity-70">{turn.role}</p>
+                        <p className="mb-1 text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                          {turn.role}
+                        </p>
                         <p className="whitespace-pre-wrap">{turn.content}</p>
                       </div>
                     ))}
@@ -359,129 +355,138 @@ export function CoachApp() {
                     onChange={(e) => setChatMessage(e.target.value)}
                     rows={4}
                     placeholder="Respond with your decision logic, tradeoffs, and metrics."
-                    className="rounded-xl border border-[#cfe0dd] p-3 outline-none focus:border-coach-accent"
+                    className="coach-textarea p-3"
                   />
-                  <button
-                    type="button"
-                    onClick={sendMessage}
-                    disabled={chatLoading || !chatMessage.trim()}
-                    className="rounded-lg bg-coach-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                  >
+                  <Button onClick={sendMessage} disabled={chatLoading || !chatMessage.trim()}>
                     {chatLoading ? "Analyzing..." : "Send Response"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
-          </div>
+          </Card>
 
-          <div className="coach-card animate-rise p-4 md:p-6">
-            <h3 className="text-lg font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-              Final Decision Memo
-            </h3>
-            <p className="mt-1 text-sm text-coach-muted">
+          <Card variant="default" padding="lg" className="animate-rise">
+            <h3 className="coach-heading text-[26px] font-semibold leading-none">Final Decision Memo</h3>
+            <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
               Submit a full recommendation to trigger executive-panel evaluation.
             </p>
             <textarea
               value={finalMemo}
               onChange={(e) => setFinalMemo(e.target.value)}
               rows={14}
-              className="mt-3 w-full rounded-xl border border-[#cfe0dd] p-3 outline-none focus:border-coach-accent"
+              className="coach-textarea coach-mono mt-3 p-3"
               placeholder="Decision, segment choice, pricing logic, metric thresholds, rollout, and risk mitigation..."
             />
-            <button
-              type="button"
+            <Button
               onClick={evaluateCase}
               disabled={!activeSession || evaluationLoading || finalMemo.trim().length < 20}
-              className="mt-3 w-full rounded-lg bg-coach-accentAlt px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              size="lg"
+              className="mt-3 w-full bg-[var(--color-accent-alt)] hover:brightness-95"
             >
               {evaluationLoading ? "Scoring your memo..." : "Evaluate Critical Thinking"}
-            </button>
-          </div>
+            </Button>
+          </Card>
         </section>
       )}
 
       {activeTab === "debrief" && (
-        <section className="coach-card animate-rise p-4 md:p-6">
-          <h2 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-            Debrief Board
-          </h2>
+        <Card variant="default" padding="lg" className="animate-rise">
+          <h2 className="coach-heading text-[30px] font-semibold leading-none">Debrief Board</h2>
 
           {!latestEvaluation ? (
-            <p className="mt-2 text-sm text-coach-muted">Complete a case to view your latest executive-panel debrief.</p>
+            <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+              Complete a case to view your latest executive-panel debrief.
+            </p>
           ) : (
             <div className="mt-4 space-y-4">
-              <div className="rounded-xl border border-[#d4e4e1] bg-[#f8fcfb] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-coach-muted">Normalized Score</p>
-                <p className="text-4xl font-semibold text-coach-accent">{latestEvaluation.normalizedScore.toFixed(1)}</p>
-                <p className="text-sm text-coach-muted">Verdict: {scoreTone(latestEvaluation.normalizedScore)}</p>
-              </div>
+              <Card variant="subtle" padding="md" className="border-[color:var(--color-accent-soft-border)]">
+                <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                  Normalized Score
+                </p>
+                <p className="coach-heading text-[56px] leading-none font-semibold text-[var(--color-accent)]">
+                  {latestEvaluation.normalizedScore.toFixed(1)}
+                </p>
+                <p className="text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                  Verdict: {scoreTone(latestEvaluation.normalizedScore)}
+                </p>
+              </Card>
 
               <div className="grid gap-3 md:grid-cols-2">
                 {(Object.entries(latestEvaluation.rubric) as Array<[RubricAxis, number]>).map(([axis, value]) => (
-                  <div key={axis} className="rounded-lg border border-[#d9e6e4] p-3">
-                    <div className="flex justify-between text-sm">
+                  <Card key={axis} variant="subtle" padding="sm">
+                    <div className="flex items-center justify-between text-[var(--text-base)]">
                       <span>{rubricLabels[axis]}</span>
                       <strong>{value.toFixed(1)}/5</strong>
                     </div>
-                    <div className="mt-2 h-2 rounded-full bg-[#e6f0ee]">
-                      <div
-                        className="h-2 rounded-full bg-coach-accent"
-                        style={{ width: `${Math.max(5, (value / 5) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
+                    <ProgressBar className="mt-2" value={Math.max(5, (value / 5) * 100)} />
+                  </Card>
                 ))}
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl border border-[#deebe8] p-4">
-                  <h3 className="font-semibold text-coach-accent">Strengths</h3>
-                  <ul className="mt-2 space-y-2 text-sm text-coach-muted">
+                <Card variant="subtle" padding="md">
+                  <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-accent)]">Strengths</h3>
+                  <ul className="mt-2 space-y-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                     {latestEvaluation.strengths.map((item, idx) => (
                       <li key={`${item}-${idx}`}>• {item}</li>
                     ))}
                   </ul>
-                </div>
-                <div className="rounded-xl border border-[#f0dfd4] p-4">
-                  <h3 className="font-semibold text-coach-accentAlt">Blind Spots</h3>
-                  <ul className="mt-2 space-y-2 text-sm text-coach-muted">
+                </Card>
+                <Card
+                  variant="subtle"
+                  padding="md"
+                  className="border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)]"
+                >
+                  <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-accent-alt)]">Blind Spots</h3>
+                  <ul className="mt-2 space-y-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                     {latestEvaluation.blindSpots.map((item, idx) => (
                       <li key={`${item}-${idx}`}>• {item}</li>
                     ))}
                   </ul>
-                </div>
+                </Card>
               </div>
 
-              <div className="rounded-xl border border-[#dfe9e7] p-4">
-                <h3 className="font-semibold">Executive Panel Verdicts</h3>
+              <Card variant="subtle" padding="md">
+                <h3 className="text-[var(--text-lg)] font-semibold">Executive Panel Verdicts</h3>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {latestEvaluation.panelFeedback.map((panel) => (
-                    <div key={panel.persona} className="rounded-lg border border-[#dbe7e5] p-3 text-sm">
-                      <p className="font-semibold">{panel.persona}</p>
-                      <p className="text-coach-muted">Score: {panel.score.toFixed(1)}/5</p>
-                      <p className="mt-1">{panel.verdict}</p>
-                      <p className="mt-2 text-coach-muted">Gap: {panel.biggestGap}</p>
-                    </div>
+                    <Card key={panel.persona} variant="default" padding="sm">
+                      <p className="text-[var(--text-base)] font-semibold">{panel.persona}</p>
+                      <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        Score: {panel.score.toFixed(1)}/5
+                      </p>
+                      <p className="mt-1 text-[var(--text-base)]">{panel.verdict}</p>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        Gap: {panel.biggestGap}
+                      </p>
+                    </Card>
                   ))}
                 </div>
-              </div>
+              </Card>
 
               {activeScenario && (
-                <div className="rounded-xl border border-[#dfe9e7] p-4">
-                  <h3 className="font-semibold">What Actually Happened</h3>
-                  <p className="mt-2 text-sm text-coach-muted">
-                    <strong className="text-coach-text">Decision:</strong> {activeScenario.actualDecision}
+                <Card variant="subtle" padding="md">
+                  <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
+                  <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                    <strong className="text-[var(--color-text-primary)]">Decision:</strong> {activeScenario.actualDecision}
                   </p>
-                  <p className="mt-2 text-sm text-coach-muted">
-                    <strong className="text-coach-text">Outcome:</strong> {activeScenario.outcome}
+                  <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                    <strong className="text-[var(--color-text-primary)]">Outcome:</strong> {activeScenario.outcome}
                   </p>
                   <div className="mt-3">
-                    <p className="text-xs uppercase tracking-[0.12em] text-coach-muted">Citations</p>
-                    <ul className="mt-2 space-y-1 text-sm text-coach-muted">
+                    <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                      Citations
+                    </p>
+                    <ul className="mt-2 space-y-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                       {activeScenario.citations.map((citation) => (
                         <li key={`${citation.url}-${citation.sourceTitle}`}>
                           •{" "}
-                          <a href={citation.url} target="_blank" rel="noreferrer" className="text-coach-accent underline">
+                          <a
+                            href={citation.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[var(--color-accent)] underline"
+                          >
                             {citation.sourceTitle}
                           </a>{" "}
                           ({citation.publishedAt})
@@ -489,104 +494,109 @@ export function CoachApp() {
                       ))}
                     </ul>
                   </div>
-                </div>
+                </Card>
               )}
             </div>
           )}
-        </section>
+        </Card>
       )}
 
       {activeTab === "skills" && (
-        <section className="coach-card animate-rise p-4 md:p-6">
-          <h2 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-            Skill Tree
-          </h2>
-          <p className="mt-1 text-sm text-coach-muted">Mastery is calculated from your historical rubric performance.</p>
+        <Card variant="default" padding="lg" className="animate-rise">
+          <h2 className="coach-heading text-[30px] font-semibold leading-none">Skill Tree</h2>
+          <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+            Mastery is calculated from your historical rubric performance.
+          </p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {(progress?.skillTree ?? []).map((node) => (
-              <div key={node.skill} className="rounded-xl border border-[#d8e5e2] p-4">
+              <Card key={node.skill} variant="subtle" padding="sm">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="font-medium">{node.skill}</span>
-                  <span className="text-sm text-coach-muted">{node.mastery}%</span>
+                  <span className="text-[var(--text-base)] font-medium">{node.skill}</span>
+                  <span className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">{node.mastery}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-[#e4efed]">
-                  <div
-                    className="h-2 rounded-full bg-coach-accentAlt"
-                    style={{ width: `${Math.max(4, node.mastery)}%` }}
-                  />
-                </div>
-              </div>
+                <ProgressBar tone="warning" value={Math.max(4, node.mastery)} />
+              </Card>
             ))}
           </div>
-        </section>
+        </Card>
       )}
 
       {activeTab === "streak" && (
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="coach-card animate-rise p-4 md:p-6">
-            <h2 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-              Streak + Progression
-            </h2>
+          <Card variant="default" padding="lg" className="animate-rise">
+            <h2 className="coach-heading text-[30px] font-semibold leading-none">Streak + Progression</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-xl border border-[#dce9e7] p-3">
-                <p className="text-xs uppercase text-coach-muted">Cases Completed</p>
-                <p className="text-2xl font-semibold">{progress?.casesCompleted ?? 0}</p>
-              </div>
-              <div className="rounded-xl border border-[#dce9e7] p-3">
-                <p className="text-xs uppercase text-coach-muted">Boss Cases</p>
-                <p className="text-2xl font-semibold">{progress?.bossCasesCompleted ?? 0}</p>
-              </div>
-              <div className="rounded-xl border border-[#dce9e7] p-3">
-                <p className="text-xs uppercase text-coach-muted">Average Score</p>
-                <p className="text-2xl font-semibold">{progress?.averageScore?.toFixed(1) ?? "0.0"}</p>
-              </div>
-              <div className="rounded-xl border border-[#dce9e7] p-3">
-                <p className="text-xs uppercase text-coach-muted">Current Streak</p>
-                <p className="text-2xl font-semibold">{progress?.streakDays ?? 0}d</p>
-              </div>
+              <Card variant="subtle" padding="sm" className="min-h-[112px]">
+                <div className="flex h-full flex-col">
+                  <p className="min-h-[18px] whitespace-nowrap text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-[var(--color-text-tertiary)]">
+                    Cases Completed
+                  </p>
+                  <p className="mt-auto text-2xl font-semibold">{progress?.casesCompleted ?? 0}</p>
+                </div>
+              </Card>
+              <Card variant="subtle" padding="sm" className="min-h-[112px]">
+                <div className="flex h-full flex-col">
+                  <p className="min-h-[18px] whitespace-nowrap text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-[var(--color-text-tertiary)]">
+                    Boss Cases
+                  </p>
+                  <p className="mt-auto text-2xl font-semibold">{progress?.bossCasesCompleted ?? 0}</p>
+                </div>
+              </Card>
+              <Card variant="subtle" padding="sm" className="min-h-[112px]">
+                <div className="flex h-full flex-col">
+                  <p className="min-h-[18px] whitespace-nowrap text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-[var(--color-text-tertiary)]">
+                    Average Score
+                  </p>
+                  <p className="mt-auto text-2xl font-semibold">{progress?.averageScore?.toFixed(1) ?? "0.0"}</p>
+                </div>
+              </Card>
+              <Card variant="subtle" padding="sm" className="min-h-[112px]">
+                <div className="flex h-full flex-col">
+                  <p className="min-h-[18px] whitespace-nowrap text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-[var(--color-text-tertiary)]">
+                    Current Streak
+                  </p>
+                  <p className="mt-auto text-2xl font-semibold">{progress?.streakDays ?? 0}d</p>
+                </div>
+              </Card>
             </div>
 
             <div className="mt-4 space-y-2">
               {progress?.weekProgress.map((week) => (
-                <div key={week.week} className="rounded-lg border border-[#dce7e5] p-3 text-sm">
+                <Card key={week.week} variant="subtle" padding="sm">
                   <div className="flex items-center justify-between">
-                    <span>Week {week.week}</span>
-                    <span className="text-coach-muted">{week.completedCases}/5 complete</span>
+                    <span className="text-[var(--text-base)]">Week {week.week}</span>
+                    <span className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                      {week.completedCases}/5 complete
+                    </span>
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-[#e4efed]">
-                    <div
-                      className="h-2 rounded-full bg-coach-accent"
-                      style={{ width: `${Math.min(100, (week.completedCases / 5) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-coach-muted">
+                  <ProgressBar className="mt-2" value={Math.min(100, (week.completedCases / 5) * 100)} />
+                  <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-tertiary)]">
                     Boss: {week.bossUnlocked ? (week.bossCompleted ? "Completed" : "Unlocked") : "Locked"}
                   </p>
-                </div>
+                </Card>
               ))}
             </div>
-          </div>
+          </Card>
 
-          <div className="coach-card animate-rise p-4 md:p-6">
-            <h3 className="text-lg font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-              Current Weakness Signals
-            </h3>
+          <Card variant="default" padding="lg" className="animate-rise">
+            <h3 className="coach-heading text-[26px] font-semibold leading-none">Current Weakness Signals</h3>
             <div className="mt-3 space-y-3">
               {weaknesses.map((item) => (
-                <div key={item.axis} className="rounded-lg border border-[#e0ebea] p-3 text-sm">
+                <Card key={item.axis} variant="subtle" padding="sm">
                   <div className="mb-1 flex items-center justify-between">
-                    <span>{rubricLabels[item.axis]}</span>
-                    <span className="text-coach-muted">Signal {Math.round(item.averageSignal * 100)}%</span>
+                    <span className="text-[var(--text-base)]">{rubricLabels[item.axis]}</span>
+                    <Pill variant="warning" className="px-2 py-1 text-[var(--text-xs)]">
+                      Signal {Math.round(item.averageSignal * 100)}%
+                    </Pill>
                   </div>
-                  <p className="text-xs text-coach-muted">{item.recommendation}</p>
-                </div>
+                  <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">{item.recommendation}</p>
+                </Card>
               ))}
             </div>
-          </div>
+          </Card>
         </section>
       )}
-
     </main>
   );
 }

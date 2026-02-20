@@ -56,6 +56,63 @@ const AXIS_DESCRIPTIONS: Record<RubricAxis, string> = {
   communicationClarity: "Communication clarity"
 };
 
+const AXIS_STRENGTH_GUIDANCE: Record<RubricAxis, string> = {
+  problemFraming:
+    "You are defining the core decision clearly and reducing ambiguity for downstream teams.",
+  customerUnderstanding:
+    "You are anchoring recommendations in a clear customer segment and practical buyer reality.",
+  businessEconomics:
+    "You are connecting product choices to revenue quality, margin health, and payback logic.",
+  metricsExperimentation:
+    "You are treating decisions as testable bets with measurable milestones and learning loops.",
+  strategicCoherence:
+    "You are aligning sequencing, scope, and priorities to a coherent strategic thesis.",
+  riskHandling:
+    "You are naming downside scenarios early and pairing them with concrete guardrails.",
+  executionRealism:
+    "You are translating strategy into realistic rollout sequencing and ownership expectations.",
+  communicationClarity:
+    "Your memo structure makes it easier for leaders to follow the argument and decide quickly."
+};
+
+const AXIS_BLIND_SPOT_GUIDANCE: Record<RubricAxis, string> = {
+  problemFraming:
+    "The decision frame is still too broad, so options are not yet compared on a common objective.",
+  customerUnderstanding:
+    "The target segment and buying context need sharper specificity to avoid generic recommendations.",
+  businessEconomics:
+    "The recommendation needs clearer economic consequences, including downside exposure and tradeoffs.",
+  metricsExperimentation:
+    "Success criteria and experiment design are under-specified, making course correction harder.",
+  strategicCoherence:
+    "The plan lacks explicit prioritization logic about what to do now versus defer.",
+  riskHandling:
+    "Major failure modes are acknowledged only lightly and not fully tied to mitigations.",
+  executionRealism:
+    "Execution sequencing and ownership details need to be concrete enough for real teams to run.",
+  communicationClarity:
+    "The memo needs tighter structure so key decisions and rationale are immediately visible."
+};
+
+const AXIS_NEXT_CASE_DRILLS: Record<RubricAxis, string> = {
+  problemFraming:
+    "Write the decision in one sentence, define the objective function, and compare at least two options against it.",
+  customerUnderstanding:
+    "Specify one primary ICP with qualifying traits, one adjacent segment to defer, and why.",
+  businessEconomics:
+    "Quantify expected revenue impact, margin effect, and a clear pivot/continue threshold.",
+  metricsExperimentation:
+    "List baseline, target, and decision threshold for each core metric before proposing rollout.",
+  strategicCoherence:
+    "State explicit sequencing logic: now, next, later, and what you are intentionally not doing.",
+  riskHandling:
+    "For the top three risks, include trigger signals, owner, and mitigation action.",
+  executionRealism:
+    "Provide a 30/60/90-day plan with named milestones, dependencies, and handoffs.",
+  communicationClarity:
+    "Use a fixed memo format: decision, rationale, economics, risks, rollout, metrics, and open questions."
+};
+
 function clamp(value: number, min = 0, max = 5): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -310,12 +367,20 @@ function summarizeStrengthsAndBlindSpots(rubric: EvaluationRubric): {
   const axes = Object.entries(rubric) as [RubricAxis, number][];
   const sortedByScore = [...axes].sort((a, b) => b[1] - a[1]);
 
-  const strengths = sortedByScore.slice(0, 3).map(([axis, score]) => {
-    return `${AXIS_DESCRIPTIONS[axis]} is a relative strength (${score.toFixed(1)}/5).`;
+  const strengths = sortedByScore.slice(0, 4).map(([axis, score]) => {
+    return [
+      `${AXIS_DESCRIPTIONS[axis]} is a relative strength (${score.toFixed(1)}/5).`,
+      AXIS_STRENGTH_GUIDANCE[axis],
+      `Maintain this edge by preserving the same evidence quality and explicit tradeoff logic in your next memo.`
+    ].join(" ");
   });
 
-  const blindSpots = sortedByScore.slice(-3).map(([axis, score]) => {
-    return `${AXIS_DESCRIPTIONS[axis]} needs improvement (${score.toFixed(1)}/5).`;
+  const blindSpots = sortedByScore.slice(-4).map(([axis, score]) => {
+    return [
+      `${AXIS_DESCRIPTIONS[axis]} needs improvement (${score.toFixed(1)}/5).`,
+      AXIS_BLIND_SPOT_GUIDANCE[axis],
+      `Next-case drill: ${AXIS_NEXT_CASE_DRILLS[axis]}`
+    ].join(" ");
   });
 
   const weaknessSignals = axes.map(([axis, score]) => ({
