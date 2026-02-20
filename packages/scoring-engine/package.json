@@ -1,0 +1,20 @@
+{
+  "name": "@coach/scoring-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/scoring-engine/src/index.js",
+  "types": "dist/scoring-engine/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'No lint configured for @coach/scoring-engine'"
+  },
+  "dependencies": {
+    "@coach/core-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  }
+}

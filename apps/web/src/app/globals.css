@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-heading: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-body: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  --bg: #f8f7f2;
+  --text: #1f2a2a;
+  --card: #ffffff;
+  --accent: #0e7a6f;
+  --accent-alt: #ff7b2c;
+  --line: #d9e0df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 15%, rgba(255, 123, 44, 0.17), transparent 40%),
+    radial-gradient(circle at 88% 8%, rgba(14, 122, 111, 0.14), transparent 35%),
+    linear-gradient(180deg, #fdfcf8 0%, var(--bg) 65%);
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.coach-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 28px rgba(16, 42, 41, 0.08);
+  border-radius: 16px;
+}
+
+.metric-pill {
+  border: 1px solid #cde2df;
+  background: #f2fbf9;
+  color: #16514a;
+}

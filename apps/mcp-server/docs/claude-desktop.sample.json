@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "executive-product-coach": {
+      "command": "pnpm",
+      "args": ["--filter", "@coach/mcp-server", "start"],
+      "cwd": "/Users/rohan/Documents/Learning",
+      "env": {
+        "MCP_PASSCODE": "your-passcode"
+      }
+    }
+  }
+}
