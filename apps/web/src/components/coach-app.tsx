@@ -301,6 +301,8 @@ export function CoachApp() {
 
       setLatestEvaluation(response.evaluation);
       setProgress(response.progress);
+      setActiveSession(null);
+      setActiveScenario(null);
       setActiveTab("debrief");
       await loadDashboard();
     } catch (err) {
@@ -563,7 +565,7 @@ export function CoachApp() {
                           )}
 
                           <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
-                            {isActive && (
+                            {isActive && !isCompleted && (
                               <Pill variant="neutral" className="px-2.5 py-1 text-[10px] uppercase tracking-[0.08em]">
                                 In Progress
                               </Pill>
