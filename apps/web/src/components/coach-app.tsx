@@ -302,7 +302,7 @@ export function CoachApp() {
                       </p>
                     </div>
                     <Button size="sm" onClick={() => startCase(item.id)}>
-                      Start Challenge
+                      Start
                     </Button>
                   </div>
                 ))}
