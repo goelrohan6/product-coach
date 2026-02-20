@@ -1,0 +1,3 @@
+interface:
+  display_name: "Run Local Server"
+  short_description: "Start and manage local dev servers safely"

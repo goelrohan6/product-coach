@@ -1,0 +1,3 @@
+interface:
+  display_name: "Debug Local Issues"
+  short_description: "Systematically debug local app and API failures"
