@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: var(--font-inter), "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-display: var(--font-inter), "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Consolas, monospace;
 
   --color-bg: #f4f3ef;

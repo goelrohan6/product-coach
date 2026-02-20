@@ -12,6 +12,7 @@ import type {
 } from "@coach/core-types";
 import { fetchJson } from "@/lib/http";
 import { Button, Card, Pill, ProgressBar, Tabs } from "@/components/ui";
+import { CompanyLabel } from "@/components/company-label";
 
 type StartCaseResponse = {
   session: CaseSession;
@@ -69,6 +70,47 @@ function oneLinePreview(text: string, max = 150): string {
   }
 
   return `${text.slice(0, max - 3)}...`;
+}
+
+function ProgressCircle({ completed, total, size = 20 }: { completed: number; total: number; size?: number }) {
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? completed / total : 0;
+  const offset = circumference * (1 - progress);
+  const color =
+    completed >= total
+      ? "var(--color-positive)"
+      : completed > 0
+        ? "var(--color-accent)"
+        : "var(--color-border-light)";
+
+  return (
+    <svg width={size} height={size} className="shrink-0">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="var(--color-border-light)"
+        strokeWidth={strokeWidth}
+      />
+      {completed > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      )}
+    </svg>
+  );
 }
 
 export function CoachApp() {
@@ -249,7 +291,6 @@ export function CoachApp() {
               <div className="flex flex-col gap-1">
                 {curriculum.map((week) => {
                   const wp = progress?.weekProgress.find((entry) => entry.week === week.week);
-                  const completion = wp ? `${wp.completedCases}/5` : "0/5";
                   const selected = selectedWeek === week.week;
                   const bossStatus = wp?.bossUnlocked
                     ? wp.bossCompleted
@@ -263,27 +304,25 @@ export function CoachApp() {
                       key={week.week}
                       onClick={() => setSelectedWeek(week.week)}
                       className={[
-                        "flex items-center gap-2 rounded-[var(--radius-lg)] px-3 py-2 text-left transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
+                        "flex items-start gap-2 rounded-[var(--radius-lg)] px-3 py-2 text-left transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
                         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
                         selected
                           ? "bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                       ].join(" ")}
                     >
-                      <span className="shrink-0 text-[var(--text-xs)] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                      <span className="mt-0.5 shrink-0 text-[var(--text-xs)] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
                         {week.week}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-[var(--text-sm)] font-medium">
+                      <span className="min-w-0 flex-1 text-[var(--text-sm)] font-medium">
                         {week.title}
-                      </span>
-                      <span className="shrink-0 text-[var(--text-xs)] tabular-nums text-[var(--color-text-tertiary)]">
-                        {completion}
                       </span>
                       {bossStatus && (
                         <Pill variant={bossStatus === "Done" ? "neutral" : "accent"} className="px-2 py-0.5 text-[10px]">
                           {bossStatus === "Done" ? "Boss ✓" : "Boss"}
                         </Pill>
                       )}
+                      <ProgressCircle completed={wp?.completedCases ?? 0} total={5} size={18} />
                     </button>
                   );
                 })}
@@ -329,7 +368,7 @@ export function CoachApp() {
                       <div>
                         <p className="text-[var(--text-base)] font-semibold">{item.title}</p>
                         <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                          {item.company} ({item.year}) • {item.caseType}
+                          <CompanyLabel company={item.company} meta={`(${item.year}) • ${item.caseType}`} />
                         </p>
                         <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
                           {oneLinePreview(item.expandedBrief.problemStatement)}
