@@ -410,6 +410,12 @@ export function CoachApp() {
               <>
                 <Card variant="subtle" padding="md">
                   <p className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{activeScenario.title}</p>
+                  <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                    <CompanyLabel
+                      company={activeScenario.company}
+                      meta={`(${activeScenario.year}) • ${activeScenario.caseType}`}
+                    />
+                  </p>
                   <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">{activeScenario.scenario}</p>
 
                   <div className="mt-3 space-y-2">
@@ -676,7 +682,16 @@ export function CoachApp() {
               {activeScenario && (
                 <Card variant="subtle" padding="md">
                   <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
-                  <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                  <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">
+                    {activeScenario.title}
+                  </p>
+                  <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                    <CompanyLabel
+                      company={activeScenario.company}
+                      meta={`(${activeScenario.year}) • ${activeScenario.caseType}`}
+                    />
+                  </p>
+                  <p className="mt-3 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                     <strong className="text-[var(--color-text-primary)]">Decision:</strong> {activeScenario.actualDecision}
                   </p>
                   <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
