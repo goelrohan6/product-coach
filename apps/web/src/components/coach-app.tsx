@@ -239,77 +239,112 @@ export function CoachApp() {
       )}
 
       {activeTab === "mission" && (
-        <Card variant="default" padding="lg" className="animate-rise">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="coach-heading text-[30px] font-semibold leading-none">12-Week Mission Map</h2>
-            <Button
-              onClick={() => startCase()}
-              className="bg-[var(--color-accent-alt)] hover:brightness-95 focus-visible:outline-[var(--color-focus)]"
-            >
-              Start Recommended Case
-            </Button>
-          </div>
+        <div className="animate-rise flex gap-4">
+          {/* Sidebar — desktop only */}
+          <div className="hidden w-[260px] shrink-0 lg:block">
+            <Card variant="default" padding="md" className="sticky top-4">
+              <h2 className="coach-heading mb-3 text-[18px] font-semibold leading-none text-[var(--color-text-primary)]">
+                Mission Map
+              </h2>
+              <div className="flex flex-col gap-1">
+                {curriculum.map((week) => {
+                  const wp = progress?.weekProgress.find((entry) => entry.week === week.week);
+                  const completion = wp ? `${wp.completedCases}/5` : "0/5";
+                  const selected = selectedWeek === week.week;
+                  const bossStatus = wp?.bossUnlocked
+                    ? wp.bossCompleted
+                      ? "Done"
+                      : "Open"
+                    : null;
 
-          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {curriculum.map((week) => {
-              const wp = progress?.weekProgress.find((entry) => entry.week === week.week);
-              const completion = wp ? `${wp.completedCases}/5` : "0/5";
-              const selected = selectedWeek === week.week;
-
-              return (
-                <button
-                  type="button"
-                  key={week.week}
-                  onClick={() => setSelectedWeek(week.week)}
-                  className={[
-                    "group rounded-[var(--radius-xl)] border p-4 text-left transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
-                    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
-                    selected
-                      ? "border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)]"
-                      : "border-[color:var(--color-border)] bg-[var(--color-surface)] hover:-translate-y-[1px] hover:bg-[var(--color-surface-hover)]"
-                  ].join(" ")}
-                >
-                  <span className="mb-3 block h-[2px] w-10 rounded-full bg-[var(--color-border-light)] transition-colors group-hover:bg-[var(--color-accent-soft-border)]" />
-                  <p className="text-[var(--text-xs)] uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">
-                    Week {week.week}
-                  </p>
-                  <p className="mt-1 text-[17px] font-semibold leading-[1.25] text-[var(--color-text-primary)]">{week.title}</p>
-                  <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">Progress: {completion}</p>
-                  <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-tertiary)]">
-                    Boss: {wp?.bossUnlocked ? (wp.bossCompleted ? "Completed" : "Unlocked") : "Locked"}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedWeekData && (
-            <Card variant="subtle" padding="md" className="mt-6">
-              <h3 className="coach-heading text-[24px] font-semibold leading-none">Week {selectedWeekData.week} Cases</h3>
-              <div className="mt-3 grid gap-2">
-                {selectedWeekData.cases.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3.5 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <p className="text-[var(--text-base)] font-semibold">{item.title}</p>
-                      <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                        {item.company} ({item.year}) • {item.caseType}
-                      </p>
-                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                        {oneLinePreview(item.expandedBrief.problemStatement)}
-                      </p>
-                    </div>
-                    <Button size="sm" onClick={() => startCase(item.id)}>
-                      Start
-                    </Button>
-                  </div>
-                ))}
+                  return (
+                    <button
+                      type="button"
+                      key={week.week}
+                      onClick={() => setSelectedWeek(week.week)}
+                      className={[
+                        "flex items-center gap-2 rounded-[var(--radius-lg)] px-3 py-2 text-left transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
+                        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
+                        selected
+                          ? "bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
+                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+                      ].join(" ")}
+                    >
+                      <span className="shrink-0 text-[var(--text-xs)] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                        {week.week}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[var(--text-sm)] font-medium">
+                        {week.title}
+                      </span>
+                      <span className="shrink-0 text-[var(--text-xs)] tabular-nums text-[var(--color-text-tertiary)]">
+                        {completion}
+                      </span>
+                      {bossStatus && (
+                        <Pill variant={bossStatus === "Done" ? "neutral" : "accent"} className="px-2 py-0.5 text-[10px]">
+                          {bossStatus === "Done" ? "Boss ✓" : "Boss"}
+                        </Pill>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </Card>
-          )}
-        </Card>
+          </div>
+
+          {/* Mobile week selector + main content */}
+          <div className="min-w-0 flex-1">
+            {/* Dropdown — mobile only */}
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(Number(e.target.value))}
+              className="mb-4 w-full rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--text-sm)] text-[var(--color-text-primary)] lg:hidden"
+            >
+              {curriculum.map((week) => (
+                <option key={week.week} value={week.week}>
+                  Week {week.week}: {week.title}
+                </option>
+              ))}
+            </select>
+
+            {/* Cases for selected week */}
+            {selectedWeekData && (
+              <Card variant="default" padding="lg">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="coach-heading text-[24px] font-semibold leading-none">
+                    Week {selectedWeekData.week}: {selectedWeekData.title}
+                  </h3>
+                  <Button
+                    onClick={() => startCase()}
+                    className="bg-[var(--color-accent-alt)] hover:brightness-95 focus-visible:outline-[var(--color-focus)]"
+                  >
+                    Start Recommended Case
+                  </Button>
+                </div>
+                <div className="grid gap-2">
+                  {selectedWeekData.cases.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3.5 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <p className="text-[var(--text-base)] font-semibold">{item.title}</p>
+                        <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          {item.company} ({item.year}) • {item.caseType}
+                        </p>
+                        <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          {oneLinePreview(item.expandedBrief.problemStatement)}
+                        </p>
+                      </div>
+                      <Button size="sm" onClick={() => startCase(item.id)}>
+                        Start Challenge
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
       )}
 
       {activeTab === "chat" && (
