@@ -7,6 +7,7 @@ import {
   type RubricAxis,
   RUBRIC_AXES
 } from "@coach/core-types";
+import { buildExpandedBriefsBySlug } from "./expanded-briefs.js";
 
 type CaseSeed = {
   slug: string;
@@ -1593,6 +1594,15 @@ const WEEK_TEMPLATES: WeekTemplate[] = [
   }
 ];
 
+const expandedBriefsBySlug = buildExpandedBriefsBySlug(WEEK_TEMPLATES);
+const totalSeedCount = WEEK_TEMPLATES.reduce((count, week) => count + week.cases.length, 0);
+
+if (Object.keys(expandedBriefsBySlug).length !== totalSeedCount) {
+  throw new Error(
+    `Expanded brief coverage mismatch: expected ${totalSeedCount}, found ${Object.keys(expandedBriefsBySlug).length}`
+  );
+}
+
 function caseTypeFromSequence(sequence: number): "standard" | "deep-dive" | "boss" {
   if (sequence === 4) {
     return "deep-dive";
@@ -1648,6 +1658,12 @@ function buildTags(template: WeekTemplate, seed: CaseSeed): string[] {
 function buildCase(template: WeekTemplate, seed: CaseSeed, sequence: number): CaseScenario {
   const caseType = caseTypeFromSequence(sequence);
   const difficulty = clampDifficulty(2 + Math.ceil(template.week / 2) + sequence);
+  const expandedBrief = expandedBriefsBySlug[seed.slug];
+
+  if (!expandedBrief) {
+    throw new Error(`Missing expanded brief for slug: ${seed.slug}`);
+  }
+
   const knowns = [
     ...template.knowns,
     `Market signal: ${seed.context}`
@@ -1678,7 +1694,8 @@ function buildCase(template: WeekTemplate, seed: CaseSeed, sequence: number): Ca
     actualDecision: seed.keyDecision,
     outcome: seed.result,
     counterfactuals: buildCounterfactuals(seed),
-    citations
+    citations,
+    expandedBrief
   };
 
   return CaseScenarioSchema.parse(built);

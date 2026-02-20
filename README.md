@@ -61,6 +61,10 @@ Where to set:
 ## MCP
 Setup docs: `/Users/rohan/Documents/Learning/apps/mcp-server/docs/README.md`
 
+## Expanded challenge briefs
+- Cases now include a structured `expandedBrief` object (history, problem statement, options, 30/60/90 plan, metrics, risks, facts vs assumptions).
+- Long-form program brief: `/Users/rohan/Documents/Learning/docs/challenge-briefs.md`
+
 ## AI folders
 This repo now includes hidden folders for AI tooling and prompts:
 - `/Users/rohan/Documents/Learning/.claude`

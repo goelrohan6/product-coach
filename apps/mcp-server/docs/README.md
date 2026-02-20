@@ -60,3 +60,4 @@ Add to Claude Desktop MCP config:
 - Data remains local by default in `~/.coach-product-coach/coach.db`.
 - LiteLLM API keys are encrypted at rest.
 - If tools return unlock/session errors, verify `MCP_PASSCODE` matches your local passcode.
+- `coach.start_case` now returns `scenario.expandedBrief` for richer pre-read context (history, options, execution plan, risks, facts vs assumptions).

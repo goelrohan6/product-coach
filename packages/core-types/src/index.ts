@@ -43,6 +43,34 @@ export const CitationRecordSchema = z.object({
 
 export type CitationRecord = z.infer<typeof CitationRecordSchema>;
 
+export const CaseBriefOptionSchema = z.object({
+  option: z.string().min(1),
+  upside: z.string().min(1),
+  downside: z.string().min(1)
+});
+
+export type CaseBriefOption = z.infer<typeof CaseBriefOptionSchema>;
+
+export const CaseExpandedBriefSchema = z.object({
+  historyToDate: z.string().min(1),
+  currentOperatingContext: z.string().min(1),
+  problemStatement: z.string().min(1),
+  whyNow: z.string().min(1),
+  stakeholderTensions: z.array(z.string().min(1)).length(4),
+  decisionOptions: z.array(CaseBriefOptionSchema).length(3),
+  recommendedDirection: z.string().min(1),
+  executionPlan30_60_90: z.array(z.string().min(1)).length(3),
+  successMetrics: z.array(z.string().min(1)).length(4),
+  riskRegister: z.array(z.string().min(1)).length(4),
+  openQuestions: z.array(z.string().min(1)).length(3),
+  nonGoals: z.array(z.string().min(1)).length(3),
+  factsAndAssumptions: z
+    .array(z.string().regex(/^\[(Fact|Inference)\]\s.+/, "Must start with [Fact] or [Inference]"))
+    .min(4)
+});
+
+export type CaseExpandedBrief = z.infer<typeof CaseExpandedBriefSchema>;
+
 export const CaseScenarioSchema = z.object({
   id: z.string().min(1),
   week: z.number().int().min(1).max(12),
@@ -62,7 +90,8 @@ export const CaseScenarioSchema = z.object({
   actualDecision: z.string().min(1),
   outcome: z.string().min(1),
   counterfactuals: z.array(z.string().min(1)).min(1),
-  citations: z.array(CitationRecordSchema).min(1)
+  citations: z.array(CitationRecordSchema).min(1),
+  expandedBrief: CaseExpandedBriefSchema
 });
 
 export type CaseScenario = z.infer<typeof CaseScenarioSchema>;

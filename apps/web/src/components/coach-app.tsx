@@ -63,6 +63,14 @@ function scoreTone(score: number): string {
   return "Needs Work";
 }
 
+function oneLinePreview(text: string, max = 150): string {
+  if (text.length <= max) {
+    return text;
+  }
+
+  return `${text.slice(0, max - 3)}...`;
+}
+
 export function CoachApp() {
   const [error, setError] = useState<string | null>(null);
 
@@ -289,6 +297,9 @@ export function CoachApp() {
                       <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
                         {item.company} ({item.year}) • {item.caseType}
                       </p>
+                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        {oneLinePreview(item.expandedBrief.problemStatement)}
+                      </p>
                     </div>
                     <Button size="sm" onClick={() => startCase(item.id)}>
                       Start Challenge
@@ -323,9 +334,133 @@ export function CoachApp() {
               </div>
             ) : (
               <>
-                <Card variant="subtle" padding="sm">
+                <Card variant="subtle" padding="md">
                   <p className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{activeScenario.title}</p>
                   <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">{activeScenario.scenario}</p>
+
+                  <div className="mt-3 space-y-2">
+                    <details open className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
+                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Executive Brief: Narrative Context</summary>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        {activeScenario.expandedBrief.historyToDate}
+                      </p>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        {activeScenario.expandedBrief.currentOperatingContext}
+                      </p>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        <strong className="text-[var(--color-text-primary)]">Problem:</strong>{" "}
+                        {activeScenario.expandedBrief.problemStatement}
+                      </p>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        <strong className="text-[var(--color-text-primary)]">Why now:</strong>{" "}
+                        {activeScenario.expandedBrief.whyNow}
+                      </p>
+                    </details>
+
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
+                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">
+                        Stakeholder Tensions and Decision Options
+                      </summary>
+                      <div className="mt-2">
+                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          Stakeholder Tensions
+                        </p>
+                        <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          {activeScenario.expandedBrief.stakeholderTensions.map((item) => (
+                            <li key={item}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          Option Set
+                        </p>
+                        <div className="mt-1 space-y-2">
+                          {activeScenario.expandedBrief.decisionOptions.map((item) => (
+                            <div
+                              key={item.option}
+                              className="rounded-[var(--radius-md)] border border-[color:var(--color-border-light)] p-2"
+                            >
+                              <p className="text-[var(--text-sm)] font-medium text-[var(--color-text-primary)]">{item.option}</p>
+                              <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">Upside: {item.upside}</p>
+                              <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">Downside: {item.downside}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        <strong className="text-[var(--color-text-primary)]">Recommended direction:</strong>{" "}
+                        {activeScenario.expandedBrief.recommendedDirection}
+                      </p>
+                    </details>
+
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
+                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Execution, Metrics, and Risk</summary>
+                      <div className="mt-2 grid gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                            30/60/90 Plan
+                          </p>
+                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                            {activeScenario.expandedBrief.executionPlan30_60_90.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                            Success Metrics
+                          </p>
+                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                            {activeScenario.expandedBrief.successMetrics.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                            Risk Register
+                          </p>
+                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                            {activeScenario.expandedBrief.riskRegister.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                            Open Questions
+                          </p>
+                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                            {activeScenario.expandedBrief.openQuestions.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          Explicit Non-Goals
+                        </p>
+                        <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          {activeScenario.expandedBrief.nonGoals.map((item) => (
+                            <li key={item}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
+
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
+                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Facts vs Assumptions</summary>
+                      <ul className="mt-2 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        {activeScenario.expandedBrief.factsAndAssumptions.map((item) => (
+                          <li key={item}>• {item}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
                 </Card>
 
                 <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] p-3">
