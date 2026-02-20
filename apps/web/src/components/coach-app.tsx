@@ -64,12 +64,13 @@ function scoreTone(score: number): string {
   return "Needs Work";
 }
 
-function oneLinePreview(text: string, max = 150): string {
-  if (text.length <= max) {
-    return text;
+function normalizeMissionCardTitle(title: string, company: string): string {
+  const prefix = `${company}: `;
+  if (title.startsWith(prefix)) {
+    return title.slice(prefix.length);
   }
 
-  return `${text.slice(0, max - 3)}...`;
+  return title;
 }
 
 function ProgressCircle({ completed, total, size = 20 }: { completed: number; total: number; size?: number }) {
@@ -135,6 +136,10 @@ export function CoachApp() {
   const selectedWeekData = useMemo(
     () => curriculum.find((week) => week.week === selectedWeek) ?? null,
     [curriculum, selectedWeek]
+  );
+  const selectedWeekProgress = useMemo(
+    () => progress?.weekProgress.find((entry) => entry.week === selectedWeek) ?? null,
+    [progress, selectedWeek]
   );
 
   async function loadDashboard() {
@@ -348,37 +353,86 @@ export function CoachApp() {
             {/* Cases for selected week */}
             {selectedWeekData && (
               <Card variant="default" padding="lg">
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="mb-5">
                   <h3 className="coach-heading text-[24px] font-semibold leading-none">
                     Week {selectedWeekData.week}: {selectedWeekData.title}
                   </h3>
-                  <Button
-                    onClick={() => startCase()}
-                    className="bg-[var(--color-accent-alt)] hover:brightness-95 focus-visible:outline-[var(--color-focus)]"
-                  >
-                    Start Recommended Case
-                  </Button>
+                  <div className="mt-3 border-t border-[color:var(--color-border-light)]" />
                 </div>
-                <div className="grid gap-2">
-                  {selectedWeekData.cases.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3.5 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <p className="text-[var(--text-base)] font-semibold">{item.title}</p>
-                        <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                          <CompanyLabel company={item.company} meta={`(${item.year}) • ${item.caseType}`} />
-                        </p>
-                        <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                          {oneLinePreview(item.expandedBrief.problemStatement)}
-                        </p>
-                      </div>
-                      <Button size="sm" onClick={() => startCase(item.id)}>
-                        Start
-                      </Button>
-                    </div>
-                  ))}
+                <div className="grid gap-3">
+                  {selectedWeekData.cases.map((item) => {
+                    const isBossCase = item.caseType === "boss";
+                    const isLocked = isBossCase && !selectedWeekProgress?.bossUnlocked;
+                    const isActive = activeScenario?.id === item.id;
+                    const unlockTarget = selectedWeekProgress?.requiredToUnlockBoss ?? 4;
+                    const unlockedCount = Math.min(selectedWeekProgress?.completedCases ?? 0, unlockTarget);
+                    const ctaLabel = isLocked ? "Locked" : isBossCase ? "Start boss" : "Start case";
+                    const displayTitle = normalizeMissionCardTitle(item.title, item.company);
+
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => {
+                          if (!isLocked) {
+                            void startCase(item.id);
+                          }
+                        }}
+                        disabled={isLocked}
+                        className={[
+                          "group w-full min-h-[120px] rounded-[var(--radius-xl)] border bg-[var(--color-surface)] p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
+                          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
+                          "md:grid md:grid-cols-[56px_minmax(0,1fr)_auto] md:items-start md:gap-4",
+                          isLocked
+                            ? "cursor-not-allowed border-[color:var(--color-border-light)] opacity-85"
+                            : "border-[color:var(--color-border-light)] hover:border-[color:var(--color-accent-soft-border)] hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)] active:translate-y-px",
+                          isActive ? "ring-1 ring-[var(--color-accent)] ring-offset-0" : ""
+                        ].join(" ")}
+                      >
+                        <div className="mb-3 flex md:mb-0 md:block md:self-start">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-surface)]">
+                            <CompanyLabel company={item.company} iconSize={40} showCompanyText={false} className="justify-center gap-0" />
+                          </div>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-[var(--text-xl)] font-semibold text-[var(--color-text-primary)]">{displayTitle}</p>
+                          <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                            {item.company} ({item.year}) • {item.caseType}
+                          </p>
+                          <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                            {item.expandedBrief.problemStatement}
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-2 md:mt-0 md:flex-col md:items-end md:justify-center">
+                          <span
+                            className={[
+                              "inline-flex items-center rounded-[var(--radius-full)] px-3 py-1 text-[var(--text-sm)] font-semibold",
+                              isLocked
+                                ? "border border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-accent-alt)]"
+                                : "border border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-accent)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
+                            ].join(" ")}
+                          >
+                            {ctaLabel}
+                          </span>
+
+                          <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
+                            {isActive && (
+                              <Pill variant="neutral" className="px-2.5 py-1 text-[10px] uppercase tracking-[0.08em]">
+                                In Progress
+                              </Pill>
+                            )}
+                            {isLocked && (
+                              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                                Complete {unlockedCount}/{unlockTarget} to unlock
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </Card>
             )}

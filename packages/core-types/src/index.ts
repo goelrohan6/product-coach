@@ -265,6 +265,15 @@ export const WeaknessesResponseSchema = z.object({
   weaknesses: z.array(WeaknessSignalSchema)
 });
 
+export const RecommendedCaseSchema = z.object({
+  caseId: z.string().min(1),
+  reason: z.string().min(1)
+});
+
+export const RecommendNextCaseResponseSchema = z.object({
+  recommendation: RecommendedCaseSchema
+});
+
 export type UnlockRequest = z.infer<typeof UnlockRequestSchema>;
 export type UnlockResponse = z.infer<typeof UnlockResponseSchema>;
 export type LiteLLMConfigRequest = z.infer<typeof LiteLLMConfigRequestSchema>;
@@ -278,6 +287,8 @@ export type EvaluateCaseResponse = z.infer<typeof EvaluateCaseResponseSchema>;
 export type CurriculumResponse = z.infer<typeof CurriculumResponseSchema>;
 export type ProgressSummaryResponse = z.infer<typeof ProgressSummaryResponseSchema>;
 export type WeaknessesResponse = z.infer<typeof WeaknessesResponseSchema>;
+export type RecommendedCase = z.infer<typeof RecommendedCaseSchema>;
+export type RecommendNextCaseResponse = z.infer<typeof RecommendNextCaseResponseSchema>;
 
 export const MCPPayloadSchemas = {
   listProgramInput: z.object({}),
@@ -291,5 +302,5 @@ export const MCPPayloadSchemas = {
   getProgressInput: z.object({}),
   getProgressOutput: ProgressSummaryResponseSchema,
   recommendNextCaseInput: z.object({}),
-  recommendNextCaseOutput: z.object({ caseId: z.string().min(1), reason: z.string().min(1) })
+  recommendNextCaseOutput: RecommendedCaseSchema
 };
