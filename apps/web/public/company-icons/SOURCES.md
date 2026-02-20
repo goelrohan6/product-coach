@@ -45,12 +45,12 @@ Notes:
 
 
 
+
+
+
+
+
 ## Runtime note
 
 The files below currently contain the local fallback SVG content (to avoid broken images when SVG Repo hotlinking is blocked):
 
-- amplitude.svg
-- crowdstrike.svg
-- dropbox.svg
-- servicenow.svg
-- zendesk.svg

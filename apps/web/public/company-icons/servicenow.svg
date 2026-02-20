@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Source: SVG Repo (https://www.svgrepo.com/show/47756/building-office-company.svg) -->
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <path fill="#607D8B" d="M406.069 0H105.931C77.241 0 53.974 23.267 53.974 51.958v408.084c0 28.691 23.267 51.958 51.958 51.958h300.138c28.691 0 51.958-23.267 51.958-51.958V51.958C458.027 23.267 434.759 0 406.069 0z"/>
-  <rect x="53.973" y="336.286" width="404.056" height="41.566" fill="#455A64"/>
-  <path fill="#90A4AE" d="M163.079 336.286h26.177v-58.733c0-11.045 8.954-19.999 19.999-19.999h93.489c11.045 0 19.999 8.954 19.999 19.999v58.733h26.177V95.978H163.079v240.308z"/>
-  <path fill="#607D8B" d="M163.079 95.978h185.842V64.137c0-8.498-6.889-15.387-15.387-15.387H178.467c-8.498 0-15.387 6.889-15.387 15.387v31.841z"/>
-  <path fill="#FFFFFF" d="M156.632 167.491h198.736v41.584H156.632zM156.632 252.978h198.736v41.584H156.632z"/>
-  <rect x="234.714" y="287.347" width="42.567" height="224.653" fill="#78909C"/>
+<!-- ServiceNow icon approximated from provided image -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="ServiceNow">
+  <circle cx="128" cy="128" r="124" fill="#63D34A"/>
+  <circle cx="128" cy="126" r="60" fill="#ffffff"/>
+  <ellipse cx="128" cy="254" rx="74" ry="64" fill="#ffffff"/>
 </svg>
