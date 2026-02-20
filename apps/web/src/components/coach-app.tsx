@@ -31,6 +31,7 @@ type EvaluateResponse = {
 };
 
 type TabKey = "mission" | "chat" | "debrief" | "skills" | "streak";
+const MIN_MEMO_CHARS = 20;
 
 const tabs: Array<{ id: TabKey; label: string }> = [
   { id: "mission", label: "Mission Map" },
@@ -71,6 +72,38 @@ function normalizeMissionCardTitle(title: string, company: string): string {
   }
 
   return title;
+}
+
+function SectionIcon({
+  kind,
+  className
+}: {
+  kind: "brief" | "chat" | "memo";
+  className?: string;
+}) {
+  if (kind === "brief") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+        <rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M8 9H16M8 13H16M8 17H13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "memo") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+        <path d="M6 3.8h8.8L19.6 8.6V20a1.8 1.8 0 0 1-1.8 1.8H6A1.8 1.8 0 0 1 4.2 20V5.6A1.8 1.8 0 0 1 6 3.8Z" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M14.6 3.8V8.2h4.4M8 12.1h8M8 15.7h8M8 19.2h5.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M7.7 5.4h8.6a2.3 2.3 0 0 1 2.3 2.3v5a2.3 2.3 0 0 1-2.3 2.3h-5l-3.9 3.6v-3.6H7.7a2.3 2.3 0 0 1-2.3-2.3v-5a2.3 2.3 0 0 1 2.3-2.3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 function ProgressCircle({ completed, total, size = 20 }: { completed: number; total: number; size?: number }) {
@@ -141,6 +174,8 @@ export function CoachApp() {
     () => progress?.weekProgress.find((entry) => entry.week === selectedWeek) ?? null,
     [progress, selectedWeek]
   );
+  const memoCharacters = finalMemo.trim().length;
+  const memoShortBy = Math.max(0, MIN_MEMO_CHARS - memoCharacters);
 
   async function loadDashboard() {
     try {
@@ -212,8 +247,8 @@ export function CoachApp() {
   }
 
   async function evaluateCase() {
-    if (!activeSession || finalMemo.trim().length < 20) {
-      setError("Final memo must be at least 20 characters.");
+    if (!activeSession || finalMemo.trim().length < MIN_MEMO_CHARS) {
+      setError(`Final memo must be at least ${MIN_MEMO_CHARS} characters.`);
       return;
     }
 
@@ -441,11 +476,14 @@ export function CoachApp() {
       )}
 
       {activeTab === "chat" && (
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <Card variant="default" padding="lg" className="animate-rise">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <h2 className="coach-heading text-[28px] font-semibold leading-none">Challenge Chat</h2>
-              <label className="flex items-center gap-2 text-[var(--text-xs)] uppercase tracking-[0.14em] text-[var(--color-text-tertiary)]">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--color-border-light)] pb-4">
+              <div className="flex items-center gap-2">
+                <SectionIcon kind="chat" className="h-5 w-5 text-[var(--color-accent)]" />
+                <h2 className="coach-heading text-[28px] font-semibold leading-none">Challenge Chat</h2>
+              </div>
+              <label className="inline-flex items-center gap-2 rounded-[var(--radius-full)] border border-[color:var(--color-border-light)] bg-[var(--color-surface-hover)] px-3 py-1.5 text-[var(--text-sm)] font-medium text-[var(--color-text-secondary)]">
                 <input
                   type="checkbox"
                   checked={timedMode}
@@ -457,128 +495,146 @@ export function CoachApp() {
             </div>
 
             {!activeSession || !activeScenario ? (
-              <div className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--color-border)] p-4 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+              <div className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--color-border)] p-5 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                 Start a case from Mission Map to begin chat coaching.
               </div>
             ) : (
               <>
                 <Card variant="subtle" padding="md">
-                  <p className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{activeScenario.title}</p>
-                  <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                  <p className="text-[var(--text-lg)] font-semibold text-[var(--color-text-primary)]">{activeScenario.title}</p>
+                  <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
                     <CompanyLabel
                       company={activeScenario.company}
                       meta={`(${activeScenario.year}) • ${activeScenario.caseType}`}
+                      iconSize={24}
                     />
                   </p>
-                  <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">{activeScenario.scenario}</p>
+                  <p className="mt-3 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+                    {activeScenario.scenario}
+                  </p>
 
-                  <div className="mt-3 space-y-2">
-                    <details open className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
-                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Executive Brief: Narrative Context</summary>
-                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                  <div className="mt-5 space-y-3">
+                    <div className="flex items-center gap-2 border-t border-[color:var(--color-border-light)] pt-4">
+                      <SectionIcon kind="brief" className="h-5 w-5 text-[var(--color-accent)]" />
+                      <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">Executive Brief</h3>
+                    </div>
+
+                    <details open className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
+                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Narrative Context</summary>
+                      <p className="mt-3 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         {activeScenario.expandedBrief.historyToDate}
                       </p>
-                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                      <p className="mt-3 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         {activeScenario.expandedBrief.currentOperatingContext}
                       </p>
-                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                      <p className="mt-3 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         <strong className="text-[var(--color-text-primary)]">Problem:</strong>{" "}
                         {activeScenario.expandedBrief.problemStatement}
                       </p>
-                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                      <p className="mt-3 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         <strong className="text-[var(--color-text-primary)]">Why now:</strong>{" "}
                         {activeScenario.expandedBrief.whyNow}
                       </p>
                     </details>
 
-                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
-                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
+                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">
                         Stakeholder Tensions and Decision Options
                       </summary>
-                      <div className="mt-2">
-                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
+                        {activeScenario.expandedBrief.stakeholderTensions.length} tensions •{" "}
+                        {activeScenario.expandedBrief.decisionOptions.length} options
+                      </p>
+                      <div className="mt-3">
+                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                           Stakeholder Tensions
                         </p>
-                        <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                           {activeScenario.expandedBrief.stakeholderTensions.map((item) => (
                             <li key={item}>• {item}</li>
                           ))}
                         </ul>
                       </div>
-                      <div className="mt-3">
-                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                      <div className="mt-4">
+                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                           Option Set
                         </p>
-                        <div className="mt-1 space-y-2">
+                        <div className="mt-2 space-y-3">
                           {activeScenario.expandedBrief.decisionOptions.map((item) => (
                             <div
                               key={item.option}
-                              className="rounded-[var(--radius-md)] border border-[color:var(--color-border-light)] p-2"
+                              className="rounded-[var(--radius-md)] border border-[color:var(--color-border-light)] p-3"
                             >
-                              <p className="text-[var(--text-sm)] font-medium text-[var(--color-text-primary)]">{item.option}</p>
-                              <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">Upside: {item.upside}</p>
-                              <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">Downside: {item.downside}</p>
+                              <p className="text-[var(--text-base)] font-medium text-[var(--color-text-primary)]">{item.option}</p>
+                              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Upside: {item.upside}</p>
+                              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Downside: {item.downside}</p>
                             </div>
                           ))}
                         </div>
                       </div>
-                      <p className="mt-3 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                      <p className="mt-4 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         <strong className="text-[var(--color-text-primary)]">Recommended direction:</strong>{" "}
                         {activeScenario.expandedBrief.recommendedDirection}
                       </p>
                     </details>
 
-                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
-                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Execution, Metrics, and Risk</summary>
-                      <div className="mt-2 grid gap-3 md:grid-cols-2">
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
+                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Execution, Metrics, and Risk</summary>
+                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
+                        {activeScenario.expandedBrief.executionPlan30_60_90.length} plan steps •{" "}
+                        {activeScenario.expandedBrief.successMetrics.length} metrics •{" "}
+                        {activeScenario.expandedBrief.riskRegister.length} risks •{" "}
+                        {activeScenario.expandedBrief.openQuestions.length} open questions
+                      </p>
+                      <div className="mt-3 grid gap-4 md:grid-cols-2">
                         <div>
-                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                             30/60/90 Plan
                           </p>
-                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                             {activeScenario.expandedBrief.executionPlan30_60_90.map((item) => (
                               <li key={item}>• {item}</li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                             Success Metrics
                           </p>
-                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                             {activeScenario.expandedBrief.successMetrics.map((item) => (
                               <li key={item}>• {item}</li>
                             ))}
                           </ul>
                         </div>
                       </div>
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div>
-                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                             Risk Register
                           </p>
-                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                             {activeScenario.expandedBrief.riskRegister.map((item) => (
                               <li key={item}>• {item}</li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                             Open Questions
                           </p>
-                          <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                             {activeScenario.expandedBrief.openQuestions.map((item) => (
                               <li key={item}>• {item}</li>
                             ))}
                           </ul>
                         </div>
                       </div>
-                      <div className="mt-3">
-                        <p className="text-[var(--text-xs)] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                      <div className="mt-4">
+                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                           Explicit Non-Goals
                         </p>
-                        <ul className="mt-1 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                           {activeScenario.expandedBrief.nonGoals.map((item) => (
                             <li key={item}>• {item}</li>
                           ))}
@@ -586,9 +642,12 @@ export function CoachApp() {
                       </div>
                     </details>
 
-                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-3">
-                      <summary className="cursor-pointer text-[var(--text-sm)] font-semibold">Facts vs Assumptions</summary>
-                      <ul className="mt-2 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
+                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Facts vs Assumptions</summary>
+                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
+                        {activeScenario.expandedBrief.factsAndAssumptions.length} items
+                      </p>
+                      <ul className="mt-3 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
                         {activeScenario.expandedBrief.factsAndAssumptions.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
@@ -597,20 +656,24 @@ export function CoachApp() {
                   </div>
                 </Card>
 
-                <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] p-3">
+                <div className="mt-5 flex items-center gap-2">
+                  <SectionIcon kind="chat" className="h-5 w-5 text-[var(--color-accent)]" />
+                  <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">Chat Stream</h3>
+                </div>
+                <div className="mt-3 max-h-[520px] space-y-3 overflow-y-auto rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] p-4">
                   {activeSession.turns
                     .filter((turn) => turn.role !== "system")
                     .map((turn, idx) => (
                       <div
                         key={`${turn.timestamp}-${idx}`}
                         className={[
-                          "rounded-[var(--radius-lg)] border p-3.5 text-[var(--text-base)]",
+                          "rounded-[var(--radius-lg)] border p-4 text-[var(--text-base)] leading-relaxed",
                           turn.role === "user"
-                            ? "ml-6 border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
-                            : "mr-6 border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-text-primary)]"
+                            ? "ml-4 border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
+                            : "mr-4 border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-text-primary)]"
                         ].join(" ")}
                       >
-                        <p className="mb-1 text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                        <p className="mb-1 text-[11px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
                           {turn.role}
                         </p>
                         <p className="whitespace-pre-wrap">{turn.content}</p>
@@ -618,15 +681,15 @@ export function CoachApp() {
                     ))}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
+                <div className="mt-5 flex flex-col gap-3">
                   <textarea
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
-                    rows={4}
+                    rows={5}
                     placeholder="Respond with your decision logic, tradeoffs, and metrics."
-                    className="coach-textarea p-3"
+                    className="coach-textarea p-4"
                   />
-                  <Button onClick={sendMessage} disabled={chatLoading || !chatMessage.trim()}>
+                  <Button variant="secondary" onClick={sendMessage} disabled={chatLoading || !chatMessage.trim()} className="self-end">
                     {chatLoading ? "Analyzing..." : "Send Response"}
                   </Button>
                 </div>
@@ -634,21 +697,29 @@ export function CoachApp() {
             )}
           </Card>
 
-          <Card variant="default" padding="lg" className="animate-rise">
-            <h3 className="coach-heading text-[26px] font-semibold leading-none">Final Decision Memo</h3>
-            <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+          <Card variant="default" padding="lg" className="animate-rise lg:sticky lg:top-4 lg:self-start">
+            <div className="flex items-center gap-2">
+              <SectionIcon kind="memo" className="h-5 w-5 text-[var(--color-accent-alt)]" />
+              <h3 className="coach-heading text-[26px] font-semibold leading-none">Final Decision Memo</h3>
+            </div>
+            <p className="mt-2 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
               Submit a full recommendation to trigger executive-panel evaluation.
             </p>
             <textarea
               value={finalMemo}
               onChange={(e) => setFinalMemo(e.target.value)}
               rows={14}
-              className="coach-textarea coach-mono mt-3 p-3"
+              className="coach-textarea coach-mono mt-4 p-4"
               placeholder="Decision, segment choice, pricing logic, metric thresholds, rollout, and risk mitigation..."
             />
+            <p className="mt-3 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
+              {memoShortBy > 0
+                ? `Minimum ${MIN_MEMO_CHARS} characters required (${memoCharacters}/${MIN_MEMO_CHARS}).`
+                : `Minimum ${MIN_MEMO_CHARS} characters reached (${memoCharacters}/${MIN_MEMO_CHARS}).`}
+            </p>
             <Button
               onClick={evaluateCase}
-              disabled={!activeSession || evaluationLoading || finalMemo.trim().length < 20}
+              disabled={!activeSession || evaluationLoading || memoCharacters < MIN_MEMO_CHARS}
               size="lg"
               className="mt-3 w-full bg-[var(--color-accent-alt)] hover:brightness-95"
             >
