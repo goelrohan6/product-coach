@@ -218,6 +218,9 @@ export function CoachApp() {
         setActiveSession(activeRes.session);
         setActiveScenario(activeRes.scenario);
         setActiveTab("chat");
+      } else {
+        setActiveSession(null);
+        setActiveScenario(null);
       }
 
       setError(null);
@@ -976,8 +979,10 @@ export function CoachApp() {
                 {selectedHistoryDetail.scenario.title}
               </h2>
               <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                {selectedHistoryDetail.scenario.company} ({selectedHistoryDetail.scenario.year}) &bull;{" "}
-                {new Date(selectedHistoryDetail.session.completedAt ?? "").toLocaleDateString()}
+                <CompanyLabel
+                  company={selectedHistoryDetail.scenario.company}
+                  meta={`(${selectedHistoryDetail.scenario.year}) • ${new Date(selectedHistoryDetail.session.completedAt ?? "").toLocaleDateString()}`}
+                />
               </p>
             </div>
           )}
@@ -999,23 +1004,27 @@ export function CoachApp() {
                   type="button"
                   key={entry.sessionId}
                   onClick={() => void loadHistoryDetail(entry.evaluationId)}
-                  className="group w-full rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4 text-left transition-[background-color,border-color,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-standard)] hover:border-[color:var(--color-accent-soft-border)] hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+                  className="group w-full rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-standard)] hover:-translate-y-[1px] hover:border-[color:var(--color-accent-soft-border)] hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1 space-y-2">
                       <p className="text-[var(--text-lg)] font-semibold text-[var(--color-text-primary)]">
                         {entry.caseTitle}
                       </p>
-                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                        {entry.company} &bull; Week {entry.week} &bull;{" "}
-                        {new Date(entry.completedAt).toLocaleDateString()}
+                      <CompanyLabel
+                        company={entry.company}
+                        className="text-[var(--text-sm)] text-[var(--color-text-secondary)]"
+                        meta={`• Week ${entry.week}`}
+                      />
+                      <p className="text-[var(--text-xs)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                        Completed {new Date(entry.completedAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="coach-heading text-[28px] font-semibold leading-none text-[var(--color-accent)]">
+                    <div className="shrink-0 rounded-[var(--radius-lg)] border border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] px-3 py-2 text-right">
+                      <p className="coach-heading text-[26px] font-semibold leading-none text-[var(--color-accent)]">
                         {entry.score.toFixed(1)}
                       </p>
-                      <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-tertiary)]">
+                      <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-secondary)]">
                         {scoreTone(entry.score)}
                       </p>
                     </div>
