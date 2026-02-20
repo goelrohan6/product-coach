@@ -9,8 +9,10 @@ import {
 import {
   CaseMessageResponseSchema,
   CaseSessionSchema,
+  CompletedSessionsResponseSchema,
   CurriculumResponseSchema,
   EvaluateCaseResponseSchema,
+  EvaluationDetailResponseSchema,
   LiteLLMConfigRequestSchema,
   ProgressSnapshotSchema,
   ProgressSummaryResponseSchema,
@@ -21,6 +23,7 @@ import {
   WeaknessesResponseSchema,
   type CaseMessageRequest,
   type CaseSession,
+  type CompletedSessionSummary,
   type EvaluateCaseRequest,
   type EvaluationResult,
   type LiteLLMConfigRequest,
@@ -896,6 +899,71 @@ export class CoachService {
     this.requireToken(token);
     const weaknesses = this.currentWeaknessSignals();
     return WeaknessesResponseSchema.parse({ weaknesses });
+  }
+
+  async getActiveSession(_token: string): Promise<{ session: CaseSession; scenario: ReturnType<typeof getCaseById> } | null> {
+    const row = this.db
+      .select()
+      .from(caseSessionsTable)
+      .where(eq(caseSessionsTable.status, "active"))
+      .orderBy(desc(caseSessionsTable.startedAt))
+      .limit(1)
+      .get();
+
+    if (!row) {
+      return null;
+    }
+
+    const session = buildSessionFromRow(row);
+    const scenario = getCaseById(session.caseId);
+
+    return { session, scenario };
+  }
+
+  async getCompletedSessions(_token: string) {
+    const rows = this.sqlite
+      .prepare(
+        `SELECT cs.id as sessionId, cs.case_id as caseId, cs.week, cs.completed_at as completedAt,
+                cs.evaluation_id as evaluationId, e.normalized_score as score
+         FROM case_sessions cs
+         JOIN evaluations e ON e.id = cs.evaluation_id
+         WHERE cs.status = 'evaluated'
+         ORDER BY cs.completed_at DESC
+         LIMIT 50`
+      )
+      .all() as Array<{
+        sessionId: string;
+        caseId: string;
+        week: number;
+        completedAt: number;
+        evaluationId: string;
+        score: number;
+      }>;
+
+    const sessions: CompletedSessionSummary[] = rows.map((row) => {
+      const scenario = getCaseById(row.caseId);
+      return {
+        sessionId: row.sessionId,
+        caseId: row.caseId,
+        week: row.week,
+        completedAt: toIso(row.completedAt),
+        score: row.score,
+        caseTitle: scenario.title,
+        company: scenario.company,
+        evaluationId: row.evaluationId
+      };
+    });
+
+    return CompletedSessionsResponseSchema.parse({ sessions });
+  }
+
+  async getEvaluation(_token: string, evaluationId: string) {
+    const evaluation = this.loadEvaluationById(evaluationId);
+    const sessionRow = this.loadSessionRow(evaluation.sessionId);
+    const session = buildSessionFromRow(sessionRow);
+    const scenario = getCaseById(session.caseId);
+
+    return EvaluationDetailResponseSchema.parse({ evaluation, session, scenario });
   }
 
   async recommendNextCase(token: string): Promise<{ caseId: string; reason: string }> {

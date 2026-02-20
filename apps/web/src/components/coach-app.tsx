@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   CaseScenario,
   CaseSession,
+  CompletedSessionSummary,
   CurriculumWeek,
   EvaluationResult,
   ProgressSnapshot,
@@ -30,13 +31,14 @@ type EvaluateResponse = {
   progress: ProgressSnapshot;
 };
 
-type TabKey = "mission" | "chat" | "debrief" | "skills" | "streak";
+type TabKey = "mission" | "chat" | "debrief" | "history" | "skills" | "streak";
 const MIN_MEMO_CHARS = 20;
 
 const tabs: Array<{ id: TabKey; label: string }> = [
   { id: "mission", label: "Mission Map" },
   { id: "chat", label: "Challenge Chat" },
   { id: "debrief", label: "Debrief Board" },
+  { id: "history", label: "Case History" },
   { id: "skills", label: "Skill Tree" },
   { id: "streak", label: "Streak + XP" }
 ];
@@ -166,6 +168,15 @@ export function CoachApp() {
   const [evaluationLoading, setEvaluationLoading] = useState(false);
   const [latestEvaluation, setLatestEvaluation] = useState<EvaluationResult | null>(null);
 
+  const [historySessions, setHistorySessions] = useState<CompletedSessionSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedHistoryDetail, setSelectedHistoryDetail] = useState<{
+    evaluation: EvaluationResult;
+    session: CaseSession;
+    scenario: CaseScenario;
+  } | null>(null);
+  const [historyDetailLoading, setHistoryDetailLoading] = useState(false);
+
   const selectedWeekData = useMemo(
     () => curriculum.find((week) => week.week === selectedWeek) ?? null,
     [curriculum, selectedWeek]
@@ -174,20 +185,41 @@ export function CoachApp() {
     () => progress?.weekProgress.find((entry) => entry.week === selectedWeek) ?? null,
     [progress, selectedWeek]
   );
+  const completedCaseMap = useMemo(() => {
+    const map = new Map<string, { score: number; evaluationId: string }>();
+    for (const entry of historySessions) {
+      const existing = map.get(entry.caseId);
+      if (!existing || entry.score > existing.score) {
+        map.set(entry.caseId, { score: entry.score, evaluationId: entry.evaluationId });
+      }
+    }
+    return map;
+  }, [historySessions]);
+
   const memoCharacters = finalMemo.trim().length;
   const memoShortBy = Math.max(0, MIN_MEMO_CHARS - memoCharacters);
 
   async function loadDashboard() {
     try {
-      const [curriculumRes, progressRes, weaknessRes] = await Promise.all([
+      const [curriculumRes, progressRes, weaknessRes, activeRes, historyRes] = await Promise.all([
         fetchJson<{ weeks: CurriculumWeek[] }>("/api/curriculum"),
         fetchJson<{ progress: ProgressSnapshot }>("/api/progress/summary"),
-        fetchJson<{ weaknesses: WeaknessSignal[] }>("/api/progress/weaknesses")
+        fetchJson<{ weaknesses: WeaknessSignal[] }>("/api/progress/weaknesses"),
+        fetchJson<{ session: CaseSession | null; scenario: CaseScenario | null }>("/api/cases/active"),
+        fetchJson<{ sessions: CompletedSessionSummary[] }>("/api/cases/history")
       ]);
 
       setCurriculum(curriculumRes.weeks);
       setProgress(progressRes.progress);
       setWeaknesses(weaknessRes.weaknesses);
+      setHistorySessions(historyRes.sessions);
+
+      if (activeRes.session && activeRes.scenario) {
+        setActiveSession(activeRes.session);
+        setActiveScenario(activeRes.scenario);
+        setActiveTab("chat");
+      }
+
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load coach dashboard";
@@ -275,6 +307,47 @@ export function CoachApp() {
     }
   }
 
+  async function loadHistory() {
+    setHistoryLoading(true);
+    try {
+      const result = await fetchJson<{ sessions: CompletedSessionSummary[] }>("/api/cases/history");
+      setHistorySessions(result.sessions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load case history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function loadHistoryDetail(evaluationId: string) {
+    setHistoryDetailLoading(true);
+    setSelectedHistoryDetail(null);
+    try {
+      const result = await fetchJson<{
+        evaluation: EvaluationResult;
+        session: CaseSession;
+        scenario: CaseScenario;
+      }>(`/api/evaluations/${evaluationId}`);
+      setSelectedHistoryDetail(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load evaluation detail");
+    } finally {
+      setHistoryDetailLoading(false);
+    }
+  }
+
+  function handleTabSelect(tabId: TabKey) {
+    setActiveTab(tabId);
+    if (tabId === "history") {
+      void loadHistory();
+    }
+  }
+
+  function viewDebrief(evaluationId: string) {
+    void loadHistoryDetail(evaluationId);
+    setActiveTab("history");
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1120px] flex-col gap-6 p-4 pb-12 md:p-10">
       <Card variant="elevated" padding="lg" className="animate-rise overflow-hidden">
@@ -308,7 +381,7 @@ export function CoachApp() {
         </div>
       </Card>
 
-      <Tabs options={tabs} activeId={activeTab} onSelect={setActiveTab} className="w-fit max-w-full" />
+      <Tabs options={tabs} activeId={activeTab} onSelect={handleTabSelect} className="w-fit max-w-full" />
 
       {error && (
         <Card
@@ -399,9 +472,11 @@ export function CoachApp() {
                     const isBossCase = item.caseType === "boss";
                     const isLocked = isBossCase && !selectedWeekProgress?.bossUnlocked;
                     const isActive = activeScenario?.id === item.id;
+                    const completion = completedCaseMap.get(item.id);
+                    const isCompleted = Boolean(completion);
                     const unlockTarget = selectedWeekProgress?.requiredToUnlockBoss ?? 4;
                     const unlockedCount = Math.min(selectedWeekProgress?.completedCases ?? 0, unlockTarget);
-                    const ctaLabel = isLocked ? "Locked" : isBossCase ? "Start boss" : "Start case";
+                    const ctaLabel = isLocked ? "Locked" : isCompleted ? "Retry case" : isBossCase ? "Start boss" : "Start case";
                     const displayTitle = normalizeMissionCardTitle(item.title, item.company);
 
                     return (
@@ -409,7 +484,9 @@ export function CoachApp() {
                         type="button"
                         key={item.id}
                         onClick={() => {
-                          if (!isLocked) {
+                          if (isCompleted && completion) {
+                            viewDebrief(completion.evaluationId);
+                          } else if (!isLocked) {
                             void startCase(item.id);
                           }
                         }}
@@ -431,7 +508,14 @@ export function CoachApp() {
                         </div>
 
                         <div className="min-w-0">
-                          <p className="text-[var(--text-xl)] font-semibold text-[var(--color-text-primary)]">{displayTitle}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[var(--text-xl)] font-semibold text-[var(--color-text-primary)]">{displayTitle}</p>
+                            {isCompleted && (
+                              <Pill variant="neutral" className="px-2 py-0.5 text-[10px]">
+                                {completion!.score.toFixed(0)}pts
+                              </Pill>
+                            )}
+                          </div>
                           <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
                             {item.company} ({item.year}) • {item.caseType}
                           </p>
@@ -446,11 +530,34 @@ export function CoachApp() {
                               "inline-flex items-center rounded-[var(--radius-full)] px-3 py-1 text-[var(--text-sm)] font-semibold",
                               isLocked
                                 ? "border border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-accent-alt)]"
-                                : "border border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-accent)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
+                                : isCompleted
+                                  ? "border border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+                                  : "border border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-accent)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
                             ].join(" ")}
                           >
-                            {ctaLabel}
+                            {isCompleted ? "View debrief" : ctaLabel}
                           </span>
+
+                          {isCompleted && !isLocked && (
+                            <span
+                              className="inline-flex items-center rounded-[var(--radius-full)] border border-[color:var(--color-border-light)] bg-[var(--color-surface-hover)] px-3 py-1 text-[var(--text-sm)] font-semibold text-[var(--color-text-secondary)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void startCase(item.id);
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  void startCase(item.id);
+                                }
+                              }}
+                            >
+                              Retry case
+                            </span>
+                          )}
 
                           <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
                             {isActive && (
@@ -845,6 +952,224 @@ export function CoachApp() {
                   </div>
                 </Card>
               )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {activeTab === "history" && (
+        <Card variant="default" padding="lg" className="animate-rise">
+          {!selectedHistoryDetail && (
+            <h2 className="coach-heading mb-4 text-[30px] font-semibold leading-none">Case History</h2>
+          )}
+
+          {selectedHistoryDetail && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setSelectedHistoryDetail(null)}
+                className="mb-3 inline-flex items-center gap-1 text-[var(--text-sm)] font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              >
+                <span aria-hidden="true">&larr;</span> Case History
+              </button>
+              <h2 className="coach-heading text-[30px] font-semibold leading-none">
+                {selectedHistoryDetail.scenario.title}
+              </h2>
+              <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                {selectedHistoryDetail.scenario.company} ({selectedHistoryDetail.scenario.year}) &bull;{" "}
+                {new Date(selectedHistoryDetail.session.completedAt ?? "").toLocaleDateString()}
+              </p>
+            </div>
+          )}
+
+          {historyLoading && !selectedHistoryDetail && (
+            <p className="text-[var(--text-base)] text-[var(--color-text-secondary)]">Loading history...</p>
+          )}
+
+          {!historyLoading && historySessions.length === 0 && !selectedHistoryDetail && (
+            <p className="text-[var(--text-base)] text-[var(--color-text-secondary)]">
+              No completed cases yet. Finish a case to see it here.
+            </p>
+          )}
+
+          {!selectedHistoryDetail && historySessions.length > 0 && (
+            <div className="grid gap-3">
+              {historySessions.map((entry) => (
+                <button
+                  type="button"
+                  key={entry.sessionId}
+                  onClick={() => void loadHistoryDetail(entry.evaluationId)}
+                  className="group w-full rounded-[var(--radius-xl)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4 text-left transition-[background-color,border-color,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-standard)] hover:border-[color:var(--color-accent-soft-border)] hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[var(--text-lg)] font-semibold text-[var(--color-text-primary)]">
+                        {entry.caseTitle}
+                      </p>
+                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        {entry.company} &bull; Week {entry.week} &bull;{" "}
+                        {new Date(entry.completedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="coach-heading text-[28px] font-semibold leading-none text-[var(--color-accent)]">
+                        {entry.score.toFixed(1)}
+                      </p>
+                      <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-tertiary)]">
+                        {scoreTone(entry.score)}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {historyDetailLoading && (
+            <p className="text-[var(--text-base)] text-[var(--color-text-secondary)]">Loading debrief...</p>
+          )}
+
+          {selectedHistoryDetail && (
+            <div className="space-y-4">
+              <Card variant="subtle" padding="md" className="border-[color:var(--color-accent-soft-border)]">
+                <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                  Normalized Score
+                </p>
+                <p className="coach-heading text-[56px] leading-none font-semibold text-[var(--color-accent)]">
+                  {selectedHistoryDetail.evaluation.normalizedScore.toFixed(1)}
+                </p>
+                <p className="text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                  Verdict: {scoreTone(selectedHistoryDetail.evaluation.normalizedScore)}
+                </p>
+              </Card>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {(Object.entries(selectedHistoryDetail.evaluation.rubric) as Array<[RubricAxis, number]>).map(([axis, value]) => (
+                  <Card key={axis} variant="subtle" padding="sm">
+                    <div className="flex items-center justify-between text-[var(--text-base)]">
+                      <span>{rubricLabels[axis]}</span>
+                      <strong>{value.toFixed(1)}/5</strong>
+                    </div>
+                    <ProgressBar className="mt-2" value={Math.max(5, (value / 5) * 100)} />
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <Card variant="subtle" padding="md">
+                  <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-accent)]">Strengths</h3>
+                  <ul className="mt-2 space-y-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                    {selectedHistoryDetail.evaluation.strengths.map((item, idx) => (
+                      <li key={`${item}-${idx}`}>• {item}</li>
+                    ))}
+                  </ul>
+                </Card>
+                <Card
+                  variant="subtle"
+                  padding="md"
+                  className="border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)]"
+                >
+                  <h3 className="text-[var(--text-base)] font-semibold text-[var(--color-accent-alt)]">Blind Spots</h3>
+                  <ul className="mt-2 space-y-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                    {selectedHistoryDetail.evaluation.blindSpots.map((item, idx) => (
+                      <li key={`${item}-${idx}`}>• {item}</li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
+
+              <Card variant="subtle" padding="md">
+                <h3 className="text-[var(--text-lg)] font-semibold">Executive Panel Verdicts</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  {selectedHistoryDetail.evaluation.panelFeedback.map((panel) => (
+                    <Card key={panel.persona} variant="default" padding="sm">
+                      <p className="text-[var(--text-base)] font-semibold">{panel.persona}</p>
+                      <p className="text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        Score: {panel.score.toFixed(1)}/5
+                      </p>
+                      <p className="mt-1 text-[var(--text-base)]">{panel.verdict}</p>
+                      <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                        Gap: {panel.biggestGap}
+                      </p>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+
+              <Card variant="subtle" padding="md">
+                <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
+                <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">
+                  {selectedHistoryDetail.scenario.title}
+                </p>
+                <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+                  <CompanyLabel
+                    company={selectedHistoryDetail.scenario.company}
+                    meta={`(${selectedHistoryDetail.scenario.year}) • ${selectedHistoryDetail.scenario.caseType}`}
+                  />
+                </p>
+                <p className="mt-3 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                  <strong className="text-[var(--color-text-primary)]">Decision:</strong>{" "}
+                  {selectedHistoryDetail.scenario.actualDecision}
+                </p>
+                <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                  <strong className="text-[var(--color-text-primary)]">Outcome:</strong>{" "}
+                  {selectedHistoryDetail.scenario.outcome}
+                </p>
+                <div className="mt-3">
+                  <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+                    Citations
+                  </p>
+                  <ul className="mt-2 space-y-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+                    {selectedHistoryDetail.scenario.citations.map((citation) => (
+                      <li key={`${citation.url}-${citation.sourceTitle}`}>
+                        •{" "}
+                        <a
+                          href={citation.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[var(--color-accent)] underline"
+                        >
+                          {citation.sourceTitle}
+                        </a>{" "}
+                        ({citation.publishedAt})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Card>
+
+              {selectedHistoryDetail.session.lastUserResponse && (
+                <Card variant="subtle" padding="md">
+                  <h3 className="text-[var(--text-lg)] font-semibold">Your Final Memo</h3>
+                  <p className="mt-2 whitespace-pre-wrap text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+                    {selectedHistoryDetail.session.lastUserResponse}
+                  </p>
+                </Card>
+              )}
+
+              <Card variant="subtle" padding="md">
+                <h3 className="text-[var(--text-lg)] font-semibold">Chat Transcript</h3>
+                <div className="mt-3 max-h-[400px] space-y-3 overflow-y-auto">
+                  {selectedHistoryDetail.session.turns
+                    .filter((turn) => turn.role !== "system")
+                    .map((turn, idx) => (
+                      <div
+                        key={`${turn.timestamp}-${idx}`}
+                        className={[
+                          "rounded-[var(--radius-lg)] border p-4 text-[var(--text-base)] leading-relaxed",
+                          turn.role === "user"
+                            ? "ml-4 border-[color:var(--color-accent-soft-border)] bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
+                            : "mr-4 border-[color:var(--color-accent-alt-soft-border)] bg-[var(--color-accent-alt-soft)] text-[var(--color-text-primary)]"
+                        ].join(" ")}
+                      >
+                        <p className="mb-1 text-[11px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                          {turn.role}
+                        </p>
+                        <p className="whitespace-pre-wrap">{turn.content}</p>
+                      </div>
+                    ))}
+                </div>
+              </Card>
             </div>
           )}
         </Card>

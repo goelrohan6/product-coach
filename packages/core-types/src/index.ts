@@ -265,6 +265,33 @@ export const WeaknessesResponseSchema = z.object({
   weaknesses: z.array(WeaknessSignalSchema)
 });
 
+export const CompletedSessionSummarySchema = z.object({
+  sessionId: z.string().min(1),
+  caseId: z.string().min(1),
+  week: z.number().int().min(1).max(12),
+  completedAt: z.string().datetime(),
+  score: z.number().min(0).max(100),
+  caseTitle: z.string().min(1),
+  company: z.string().min(1),
+  evaluationId: z.string().min(1)
+});
+
+export type CompletedSessionSummary = z.infer<typeof CompletedSessionSummarySchema>;
+
+export const CompletedSessionsResponseSchema = z.object({
+  sessions: z.array(CompletedSessionSummarySchema)
+});
+
+export type CompletedSessionsResponse = z.infer<typeof CompletedSessionsResponseSchema>;
+
+export const EvaluationDetailResponseSchema = z.object({
+  evaluation: EvaluationResultSchema,
+  session: CaseSessionSchema,
+  scenario: CaseScenarioSchema
+});
+
+export type EvaluationDetailResponse = z.infer<typeof EvaluationDetailResponseSchema>;
+
 export const RecommendedCaseSchema = z.object({
   caseId: z.string().min(1),
   reason: z.string().min(1)
