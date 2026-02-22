@@ -113,6 +113,17 @@ const AXIS_NEXT_CASE_DRILLS: Record<RubricAxis, string> = {
     "Use a fixed memo format: decision, rationale, economics, risks, rollout, metrics, and open questions."
 };
 
+const AXIS_SENTENCE_KEYWORDS: Record<RubricAxis, string[]> = {
+  problemFraming: ["decision", "problem", "objective", "scope", "tradeoff", "option"],
+  customerUnderstanding: ["icp", "segment", "customer", "buyer", "persona", "use case"],
+  businessEconomics: ["pricing", "price", "margin", "revenue", "payback", "economics", "nrr", "churn"],
+  metricsExperimentation: ["metric", "kpi", "baseline", "target", "experiment", "threshold", "guardrail"],
+  strategicCoherence: ["strategy", "focus", "priority", "sequence", "now", "next", "later", "thesis"],
+  riskHandling: ["risk", "failure", "mitigation", "trigger", "downside", "owner"],
+  executionRealism: ["30", "60", "90", "rollout", "milestone", "dependency", "handoff", "owner"],
+  communicationClarity: ["recommend", "because", "therefore", "summary", "decision memo", "headline"]
+};
+
 function clamp(value: number, min = 0, max = 5): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -359,7 +370,79 @@ function buildMissingEvidence(signals: SignalChecks): string[] {
   return missing.length > 0 ? missing : ["Evidence quality is strong across core decision dimensions."];
 }
 
-function summarizeStrengthsAndBlindSpots(rubric: EvaluationRubric): {
+function cleanSentence(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function truncateWithEllipsis(text: string, maxChars: number): string {
+  if (text.length <= maxChars) {
+    return text;
+  }
+
+  return `${text.slice(0, Math.max(0, maxChars - 3)).trim()}...`;
+}
+
+function sentenceCandidates(text: string): string[] {
+  return text
+    .split(/[.!?]\s+|\n+/)
+    .map((sentence) => cleanSentence(sentence))
+    .filter((sentence) => sentence.length >= 30);
+}
+
+function extractMemoExampleByAxis(combinedText: string, axis: RubricAxis): string {
+  const sentences = sentenceCandidates(combinedText);
+  const keywords = AXIS_SENTENCE_KEYWORDS[axis];
+
+  let best: { sentence: string; score: number } | null = null;
+
+  for (const sentence of sentences) {
+    const normalized = normalize(sentence);
+    const score = keywordHits(normalized, keywords);
+    if (score === 0) {
+      continue;
+    }
+    if (!best || score > best.score || (score === best.score && sentence.length > best.sentence.length)) {
+      best = { sentence, score };
+    }
+  }
+
+  if (!best) {
+    return "No direct memo evidence detected for this axis.";
+  }
+
+  return `"${truncateWithEllipsis(best.sentence, 220)}"`;
+}
+
+function buildReusableAxisExample(axis: RubricAxis, caseScenario: CaseScenario): string {
+  const decision = truncateWithEllipsis(caseScenario.actualDecision, 140);
+  const outcome = truncateWithEllipsis(caseScenario.outcome, 140);
+
+  const examples: Record<RubricAxis, string> = {
+    problemFraming: `Frame the call in one line: "${decision}" and compare at least two rejected alternatives against the same objective.`,
+    customerUnderstanding:
+      `Name one primary ICP and one deferred segment for ${caseScenario.company}, then state why the deferred group is out of scope this cycle.`,
+    businessEconomics:
+      `Tie the recommendation to economics by quantifying expected revenue quality, margin impact, and a pivot threshold before scaling.`,
+    metricsExperimentation:
+      "Define baseline, target, and decision threshold for each core metric before rollout, and pre-commit to stop conditions.",
+    strategicCoherence:
+      "State now/next/later sequencing and one explicit non-goal so teams cannot interpret the strategy in conflicting ways.",
+    riskHandling:
+      "For top risks, specify trigger signal, owner, and mitigation action, then review weekly until risk trend is stable.",
+    executionRealism:
+      "Use a 30/60/90 plan with milestones, dependencies, and handoffs; include the exact checkpoint that determines scale or hold.",
+    communicationClarity:
+      `Use a fixed memo flow: decision -> rationale -> economics -> risks -> rollout -> metrics. Anchor with observed outcome context: "${outcome}".`
+  };
+
+  return examples[axis];
+}
+
+function summarizeStrengthsAndBlindSpots(
+  rubric: EvaluationRubric,
+  combinedText: string,
+  caseScenario: CaseScenario
+): {
   strengths: string[];
   blindSpots: string[];
   weaknessSignals: { axis: RubricAxis; signal: number }[];
@@ -368,18 +451,26 @@ function summarizeStrengthsAndBlindSpots(rubric: EvaluationRubric): {
   const sortedByScore = [...axes].sort((a, b) => b[1] - a[1]);
 
   const strengths = sortedByScore.slice(0, 4).map(([axis, score]) => {
+    const memoExample = extractMemoExampleByAxis(combinedText, axis);
+    const reusableExample = buildReusableAxisExample(axis, caseScenario);
     return [
       `${AXIS_DESCRIPTIONS[axis]} is a relative strength (${score.toFixed(1)}/5).`,
       AXIS_STRENGTH_GUIDANCE[axis],
-      `Maintain this edge by preserving the same evidence quality and explicit tradeoff logic in your next memo.`
+      "Maintain this edge by preserving the same evidence quality and explicit tradeoff logic in your next memo.",
+      `Example from your memo: ${memoExample}`,
+      `Example to keep/reuse: ${reusableExample}`
     ].join(" ");
   });
 
   const blindSpots = sortedByScore.slice(-4).map(([axis, score]) => {
+    const memoExample = extractMemoExampleByAxis(combinedText, axis);
+    const reusableExample = buildReusableAxisExample(axis, caseScenario);
     return [
       `${AXIS_DESCRIPTIONS[axis]} needs improvement (${score.toFixed(1)}/5).`,
       AXIS_BLIND_SPOT_GUIDANCE[axis],
-      `Next-case drill: ${AXIS_NEXT_CASE_DRILLS[axis]}`
+      `Next-case drill: ${AXIS_NEXT_CASE_DRILLS[axis]}`,
+      `Example from your memo: ${memoExample}`,
+      `Example to keep/reuse: ${reusableExample}`
     ].join(" ");
   });
 
@@ -439,7 +530,7 @@ export async function evaluateDecision(input: EvaluateDecisionInput): Promise<Ev
   const normalizedScore = Math.round((rubricScore * 0.7 + panelScore * 0.3) * 10) / 10;
 
   const missingEvidence = buildMissingEvidence(signals);
-  const summary = summarizeStrengthsAndBlindSpots(rubric);
+  const summary = summarizeStrengthsAndBlindSpots(rubric, combinedText, input.caseScenario);
 
   const result: EvaluationResult = {
     id: randomUUID(),

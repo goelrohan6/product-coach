@@ -22,8 +22,12 @@ import {
   UnlockResponseSchema,
   WeaknessesResponseSchema,
   type CaseMessageRequest,
+  type CaseScenario,
+  type CaseScenarioChallenge,
   type CaseSession,
   type CompletedSessionSummary,
+  type CurriculumWeek,
+  type CurriculumWeekChallenge,
   type EvaluateCaseRequest,
   type EvaluationResult,
   type LiteLLMConfigRequest,
@@ -99,6 +103,42 @@ function buildSessionFromRow(row: {
     lastUserResponse: row.lastUserResponse,
     evaluationId: row.evaluationId
   });
+}
+
+function toChallengeScenario(scenario: CaseScenario): CaseScenarioChallenge {
+  return {
+    id: scenario.id,
+    week: scenario.week,
+    sequence: scenario.sequence,
+    caseType: scenario.caseType,
+    title: scenario.title,
+    company: scenario.company,
+    year: scenario.year,
+    domain: scenario.domain,
+    topicTags: scenario.topicTags,
+    difficulty: scenario.difficulty,
+    scenario: scenario.scenario,
+    decisionPrompt: scenario.decisionPrompt,
+    knowns: scenario.knowns,
+    unknowns: scenario.unknowns,
+    constraints: scenario.constraints,
+    expandedBrief: {
+      historyToDate: scenario.expandedBrief.historyToDate,
+      currentOperatingContext: scenario.expandedBrief.currentOperatingContext,
+      problemStatement: scenario.expandedBrief.problemStatement,
+      whyNow: scenario.expandedBrief.whyNow,
+      stakeholderTensions: scenario.expandedBrief.stakeholderTensions
+    }
+  };
+}
+
+function toChallengeCurriculum(weeks: CurriculumWeek[]): CurriculumWeekChallenge[] {
+  return weeks.map((week) => ({
+    week: week.week,
+    title: week.title,
+    competencyFocus: week.competencyFocus,
+    cases: week.cases.map((scenario) => toChallengeScenario(scenario))
+  }));
 }
 
 function recommendationForAxis(axis: RubricAxis): string {
@@ -660,9 +700,9 @@ export class CoachService {
     return { saved: true };
   }
 
-  async getCurriculum(token: string): Promise<{ weeks: ReturnType<typeof getCurriculum> }> {
+  async getCurriculum(token: string): Promise<{ weeks: CurriculumWeekChallenge[] }> {
     this.requireToken(token);
-    return CurriculumResponseSchema.parse({ weeks: getCurriculum() });
+    return CurriculumResponseSchema.parse({ weeks: toChallengeCurriculum(getCurriculum()) });
   }
 
   async startCase(token: string, request: { caseId?: string }) {
@@ -724,7 +764,7 @@ export class CoachService {
     const row = this.loadSessionRow(sessionId);
     return StartCaseResponseSchema.parse({
       session: buildSessionFromRow(row),
-      scenario
+      scenario: toChallengeScenario(scenario)
     });
   }
 
@@ -901,7 +941,7 @@ export class CoachService {
     return WeaknessesResponseSchema.parse({ weaknesses });
   }
 
-  async getActiveSession(_token: string): Promise<{ session: CaseSession; scenario: ReturnType<typeof getCaseById> } | null> {
+  async getActiveSession(_token: string): Promise<{ session: CaseSession; scenario: CaseScenarioChallenge } | null> {
     const row = this.db
       .select()
       .from(caseSessionsTable)
@@ -917,7 +957,7 @@ export class CoachService {
     const session = buildSessionFromRow(row);
     const scenario = getCaseById(session.caseId);
 
-    return { session, scenario };
+    return { session, scenario: toChallengeScenario(scenario) };
   }
 
   async getCompletedSessions(_token: string) {

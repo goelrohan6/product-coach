@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   CaseScenario,
+  CaseScenarioChallenge,
   CaseSession,
   CompletedSessionSummary,
-  CurriculumWeek,
+  CurriculumWeekChallenge,
+  EvaluationDetailResponse,
   EvaluationResult,
   ProgressSnapshot,
   RubricAxis,
@@ -17,7 +19,7 @@ import { CompanyLabel } from "@/components/company-label";
 
 type StartCaseResponse = {
   session: CaseSession;
-  scenario: CaseScenario;
+  scenario: CaseScenarioChallenge;
 };
 
 type MessageResponse = {
@@ -149,10 +151,186 @@ function ProgressCircle({ completed, total, size = 20 }: { completed: number; to
   );
 }
 
+function CaseRevealCard({ scenario }: { scenario: CaseScenario }) {
+  const brief = scenario.expandedBrief;
+
+  return (
+    <Card variant="subtle" padding="md">
+      <h3 className="text-[var(--text-lg)] font-semibold">Case Reveal</h3>
+      <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{scenario.title}</p>
+      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+        <CompanyLabel company={scenario.company} meta={`(${scenario.year}) • ${scenario.caseType}`} />
+      </p>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Option Set</p>
+        <div className="mt-2 space-y-3">
+          {brief.decisionOptions.map((item) => (
+            <div key={item.option} className="rounded-[var(--radius-md)] border border-[color:var(--color-border-light)] p-3">
+              <p className="text-[var(--text-base)] font-medium text-[var(--color-text-primary)]">{item.option}</p>
+              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Upside: {item.upside}</p>
+              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Downside: {item.downside}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-4 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+        <strong className="text-[var(--color-text-primary)]">Recommended direction:</strong> {brief.recommendedDirection}
+      </p>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">30/60/90 Plan</p>
+          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+            {brief.executionPlan30_60_90.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Success Metrics</p>
+          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+            {brief.successMetrics.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Risk Register</p>
+          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+            {brief.riskRegister.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Open Questions</p>
+          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+            {brief.openQuestions.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Explicit Non-Goals</p>
+        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+          {brief.nonGoals.map((item) => (
+            <li key={item}>• {item}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Facts vs Assumptions</p>
+        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+          {brief.factsAndAssumptions.map((item) => (
+            <li key={item}>• {item}</li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+function WhatActuallyHappenedCard({ scenario }: { scenario: CaseScenario }) {
+  const brief = scenario.expandedBrief;
+
+  return (
+    <Card variant="subtle" padding="md">
+      <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
+      <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">{scenario.title}</p>
+      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+        <CompanyLabel company={scenario.company} meta={`(${scenario.year}) • ${scenario.caseType}`} />
+      </p>
+
+      <p className="mt-3 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+        <strong className="text-[var(--color-text-primary)]">Decision:</strong> {scenario.actualDecision}
+      </p>
+      <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+        <strong className="text-[var(--color-text-primary)]">Outcome:</strong> {scenario.outcome}
+      </p>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Detailed Notes</p>
+        <p className="mt-2 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">{brief.historyToDate}</p>
+        <p className="mt-2 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+          {brief.currentOperatingContext}
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div>
+          <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">Knowns</p>
+          <ul className="mt-2 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+            {scenario.knowns.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">Unknowns</p>
+          <ul className="mt-2 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+            {scenario.unknowns.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">Constraints</p>
+          <ul className="mt-2 space-y-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
+            {scenario.constraints.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Counterfactuals</p>
+        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+          {scenario.counterfactuals.map((item) => (
+            <li key={item}>• {item}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Facts vs Inferences</p>
+        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+          {brief.factsAndAssumptions.map((item) => (
+            <li key={item}>• {item}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">Citations</p>
+        <ul className="mt-2 space-y-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
+          {scenario.citations.map((citation) => (
+            <li key={`${citation.url}-${citation.sourceTitle}`}>
+              •{" "}
+              <a href={citation.url} target="_blank" rel="noreferrer" className="text-[var(--color-accent)] underline">
+                {citation.sourceTitle}
+              </a>{" "}
+              ({citation.publishedAt}; confidence {(citation.confidence * 100).toFixed(0)}%)
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
 export function CoachApp() {
   const [error, setError] = useState<string | null>(null);
 
-  const [curriculum, setCurriculum] = useState<CurriculumWeek[]>([]);
+  const [curriculum, setCurriculum] = useState<CurriculumWeekChallenge[]>([]);
   const [progress, setProgress] = useState<ProgressSnapshot | null>(null);
   const [weaknesses, setWeaknesses] = useState<WeaknessSignal[]>([]);
 
@@ -160,21 +338,18 @@ export function CoachApp() {
   const [selectedWeek, setSelectedWeek] = useState(1);
 
   const [activeSession, setActiveSession] = useState<CaseSession | null>(null);
-  const [activeScenario, setActiveScenario] = useState<CaseScenario | null>(null);
+  const [activeScenario, setActiveScenario] = useState<CaseScenarioChallenge | null>(null);
   const [chatMessage, setChatMessage] = useState("");
   const [finalMemo, setFinalMemo] = useState("");
   const [timedMode, setTimedMode] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
   const [evaluationLoading, setEvaluationLoading] = useState(false);
   const [latestEvaluation, setLatestEvaluation] = useState<EvaluationResult | null>(null);
+  const [latestDebriefDetail, setLatestDebriefDetail] = useState<EvaluationDetailResponse | null>(null);
 
   const [historySessions, setHistorySessions] = useState<CompletedSessionSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [selectedHistoryDetail, setSelectedHistoryDetail] = useState<{
-    evaluation: EvaluationResult;
-    session: CaseSession;
-    scenario: CaseScenario;
-  } | null>(null);
+  const [selectedHistoryDetail, setSelectedHistoryDetail] = useState<EvaluationDetailResponse | null>(null);
   const [historyDetailLoading, setHistoryDetailLoading] = useState(false);
 
   const selectedWeekData = useMemo(
@@ -202,10 +377,10 @@ export function CoachApp() {
   async function loadDashboard() {
     try {
       const [curriculumRes, progressRes, weaknessRes, activeRes, historyRes] = await Promise.all([
-        fetchJson<{ weeks: CurriculumWeek[] }>("/api/curriculum"),
+        fetchJson<{ weeks: CurriculumWeekChallenge[] }>("/api/curriculum"),
         fetchJson<{ progress: ProgressSnapshot }>("/api/progress/summary"),
         fetchJson<{ weaknesses: WeaknessSignal[] }>("/api/progress/weaknesses"),
-        fetchJson<{ session: CaseSession | null; scenario: CaseScenario | null }>("/api/cases/active"),
+        fetchJson<{ session: CaseSession | null; scenario: CaseScenarioChallenge | null }>("/api/cases/active"),
         fetchJson<{ sessions: CompletedSessionSummary[] }>("/api/cases/history")
       ]);
 
@@ -247,6 +422,7 @@ export function CoachApp() {
       setActiveSession(response.session);
       setActiveScenario(response.scenario);
       setLatestEvaluation(null);
+      setLatestDebriefDetail(null);
       setFinalMemo("");
       setActiveTab("chat");
     } catch (err) {
@@ -300,6 +476,12 @@ export function CoachApp() {
       });
 
       setLatestEvaluation(response.evaluation);
+      try {
+        const detail = await fetchJson<EvaluationDetailResponse>(`/api/evaluations/${response.evaluation.id}`);
+        setLatestDebriefDetail(detail);
+      } catch {
+        setLatestDebriefDetail(null);
+      }
       setProgress(response.progress);
       setActiveSession(null);
       setActiveScenario(null);
@@ -328,11 +510,7 @@ export function CoachApp() {
     setHistoryDetailLoading(true);
     setSelectedHistoryDetail(null);
     try {
-      const result = await fetchJson<{
-        evaluation: EvaluationResult;
-        session: CaseSession;
-        scenario: CaseScenario;
-      }>(`/api/evaluations/${evaluationId}`);
+      const result = await fetchJson<EvaluationDetailResponse>(`/api/evaluations/${evaluationId}`);
       setSelectedHistoryDetail(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load evaluation detail");
@@ -650,121 +828,24 @@ export function CoachApp() {
                     </details>
 
                     <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
-                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">
-                        Stakeholder Tensions and Decision Options
-                      </summary>
+                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Stakeholder Tensions</summary>
                       <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
-                        {activeScenario.expandedBrief.stakeholderTensions.length} tensions •{" "}
-                        {activeScenario.expandedBrief.decisionOptions.length} options
-                      </p>
-                      <div className="mt-3">
-                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                          Stakeholder Tensions
-                        </p>
-                        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                          {activeScenario.expandedBrief.stakeholderTensions.map((item) => (
-                            <li key={item}>• {item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="mt-4">
-                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                          Option Set
-                        </p>
-                        <div className="mt-2 space-y-3">
-                          {activeScenario.expandedBrief.decisionOptions.map((item) => (
-                            <div
-                              key={item.option}
-                              className="rounded-[var(--radius-md)] border border-[color:var(--color-border-light)] p-3"
-                            >
-                              <p className="text-[var(--text-base)] font-medium text-[var(--color-text-primary)]">{item.option}</p>
-                              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Upside: {item.upside}</p>
-                              <p className="mt-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">Downside: {item.downside}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="mt-4 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                        <strong className="text-[var(--color-text-primary)]">Recommended direction:</strong>{" "}
-                        {activeScenario.expandedBrief.recommendedDirection}
-                      </p>
-                    </details>
-
-                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
-                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Execution, Metrics, and Risk</summary>
-                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
-                        {activeScenario.expandedBrief.executionPlan30_60_90.length} plan steps •{" "}
-                        {activeScenario.expandedBrief.successMetrics.length} metrics •{" "}
-                        {activeScenario.expandedBrief.riskRegister.length} risks •{" "}
-                        {activeScenario.expandedBrief.openQuestions.length} open questions
-                      </p>
-                      <div className="mt-3 grid gap-4 md:grid-cols-2">
-                        <div>
-                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                            30/60/90 Plan
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                            {activeScenario.expandedBrief.executionPlan30_60_90.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                            Success Metrics
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                            {activeScenario.expandedBrief.successMetrics.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="mt-4 grid gap-4 md:grid-cols-2">
-                        <div>
-                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                            Risk Register
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                            {activeScenario.expandedBrief.riskRegister.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                            Open Questions
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                            {activeScenario.expandedBrief.openQuestions.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-                          Explicit Non-Goals
-                        </p>
-                        <ul className="mt-2 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                          {activeScenario.expandedBrief.nonGoals.map((item) => (
-                            <li key={item}>• {item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </details>
-
-                    <details className="rounded-[var(--radius-lg)] border border-[color:var(--color-border-light)] bg-[var(--color-surface)] p-4">
-                      <summary className="cursor-pointer text-[var(--text-base)] font-semibold">Facts vs Assumptions</summary>
-                      <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-tertiary)]">
-                        {activeScenario.expandedBrief.factsAndAssumptions.length} items
+                        {activeScenario.expandedBrief.stakeholderTensions.length} tensions
                       </p>
                       <ul className="mt-3 space-y-1.5 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
-                        {activeScenario.expandedBrief.factsAndAssumptions.map((item) => (
+                        {activeScenario.expandedBrief.stakeholderTensions.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
                       </ul>
                     </details>
+
+                    <Card variant="subtle" padding="md" className="border-[color:var(--color-accent-soft-border)]">
+                      <p className="text-[var(--text-sm)] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Your Task</p>
+                      <p className="mt-2 text-[var(--text-base)] leading-relaxed text-[var(--color-text-secondary)]">
+                        Define your own options and recommendation. In your memo, include execution sequencing, metrics with thresholds,
+                        explicit risks with mitigation, and a clear facts-vs-assumptions split.
+                      </p>
+                    </Card>
                   </div>
                 </Card>
 
@@ -916,45 +997,17 @@ export function CoachApp() {
                 </div>
               </Card>
 
-              {activeScenario && (
+              {latestDebriefDetail?.scenario ? (
+                <>
+                  <CaseRevealCard scenario={latestDebriefDetail.scenario} />
+                  <WhatActuallyHappenedCard scenario={latestDebriefDetail.scenario} />
+                </>
+              ) : (
                 <Card variant="subtle" padding="md">
-                  <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
-                  <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">
-                    {activeScenario.title}
-                  </p>
-                  <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                    <CompanyLabel
-                      company={activeScenario.company}
-                      meta={`(${activeScenario.year}) • ${activeScenario.caseType}`}
-                    />
-                  </p>
-                  <p className="mt-3 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                    <strong className="text-[var(--color-text-primary)]">Decision:</strong> {activeScenario.actualDecision}
-                  </p>
+                  <h3 className="text-[var(--text-lg)] font-semibold">Case Reveal Pending</h3>
                   <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                    <strong className="text-[var(--color-text-primary)]">Outcome:</strong> {activeScenario.outcome}
+                    Reveal details could not be loaded for this debrief. Open the case from History to view the full case reveal.
                   </p>
-                  <div className="mt-3">
-                    <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
-                      Citations
-                    </p>
-                    <ul className="mt-2 space-y-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                      {activeScenario.citations.map((citation) => (
-                        <li key={`${citation.url}-${citation.sourceTitle}`}>
-                          •{" "}
-                          <a
-                            href={citation.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[var(--color-accent)] underline"
-                          >
-                            {citation.sourceTitle}
-                          </a>{" "}
-                          ({citation.publishedAt})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
                 </Card>
               )}
             </div>
@@ -1107,47 +1160,8 @@ export function CoachApp() {
                 </div>
               </Card>
 
-              <Card variant="subtle" padding="md">
-                <h3 className="text-[var(--text-lg)] font-semibold">What Actually Happened</h3>
-                <p className="mt-2 text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">
-                  {selectedHistoryDetail.scenario.title}
-                </p>
-                <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                  <CompanyLabel
-                    company={selectedHistoryDetail.scenario.company}
-                    meta={`(${selectedHistoryDetail.scenario.year}) • ${selectedHistoryDetail.scenario.caseType}`}
-                  />
-                </p>
-                <p className="mt-3 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                  <strong className="text-[var(--color-text-primary)]">Decision:</strong>{" "}
-                  {selectedHistoryDetail.scenario.actualDecision}
-                </p>
-                <p className="mt-2 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                  <strong className="text-[var(--color-text-primary)]">Outcome:</strong>{" "}
-                  {selectedHistoryDetail.scenario.outcome}
-                </p>
-                <div className="mt-3">
-                  <p className="text-[var(--text-xs)] uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
-                    Citations
-                  </p>
-                  <ul className="mt-2 space-y-1 text-[var(--text-base)] text-[var(--color-text-secondary)]">
-                    {selectedHistoryDetail.scenario.citations.map((citation) => (
-                      <li key={`${citation.url}-${citation.sourceTitle}`}>
-                        •{" "}
-                        <a
-                          href={citation.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[var(--color-accent)] underline"
-                        >
-                          {citation.sourceTitle}
-                        </a>{" "}
-                        ({citation.publishedAt})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Card>
+              <CaseRevealCard scenario={selectedHistoryDetail.scenario} />
+              <WhatActuallyHappenedCard scenario={selectedHistoryDetail.scenario} />
 
               {selectedHistoryDetail.session.lastUserResponse && (
                 <Card variant="subtle" padding="md">

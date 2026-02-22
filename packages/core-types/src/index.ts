@@ -70,6 +70,15 @@ export const CaseExpandedBriefSchema = z.object({
 });
 
 export type CaseExpandedBrief = z.infer<typeof CaseExpandedBriefSchema>;
+export const CaseExpandedBriefChallengeSchema = CaseExpandedBriefSchema.pick({
+  historyToDate: true,
+  currentOperatingContext: true,
+  problemStatement: true,
+  whyNow: true,
+  stakeholderTensions: true
+});
+
+export type CaseExpandedBriefChallenge = z.infer<typeof CaseExpandedBriefChallengeSchema>;
 
 export const CaseScenarioSchema = z.object({
   id: z.string().min(1),
@@ -95,6 +104,27 @@ export const CaseScenarioSchema = z.object({
 });
 
 export type CaseScenario = z.infer<typeof CaseScenarioSchema>;
+export const CaseScenarioChallengeSchema = CaseScenarioSchema.pick({
+  id: true,
+  week: true,
+  sequence: true,
+  caseType: true,
+  title: true,
+  company: true,
+  year: true,
+  domain: true,
+  topicTags: true,
+  difficulty: true,
+  scenario: true,
+  decisionPrompt: true,
+  knowns: true,
+  unknowns: true,
+  constraints: true
+}).extend({
+  expandedBrief: CaseExpandedBriefChallengeSchema
+});
+
+export type CaseScenarioChallenge = z.infer<typeof CaseScenarioChallengeSchema>;
 
 export const CurriculumWeekSchema = z.object({
   week: z.number().int().min(1).max(12),
@@ -104,6 +134,14 @@ export const CurriculumWeekSchema = z.object({
 });
 
 export type CurriculumWeek = z.infer<typeof CurriculumWeekSchema>;
+export const CurriculumWeekChallengeSchema = z.object({
+  week: z.number().int().min(1).max(12),
+  title: z.string().min(1),
+  competencyFocus: z.array(z.string().min(1)).min(1),
+  cases: z.array(CaseScenarioChallengeSchema).length(5)
+});
+
+export type CurriculumWeekChallenge = z.infer<typeof CurriculumWeekChallengeSchema>;
 
 export const CaseSessionTurnSchema = z.object({
   role: z.enum(["system", "user", "coach"]),
@@ -228,7 +266,7 @@ export const StartCaseRequestSchema = z.object({
 
 export const StartCaseResponseSchema = z.object({
   session: CaseSessionSchema,
-  scenario: CaseScenarioSchema
+  scenario: CaseScenarioChallengeSchema
 });
 
 export const CaseMessageRequestSchema = z.object({
@@ -254,7 +292,7 @@ export const EvaluateCaseResponseSchema = z.object({
 });
 
 export const CurriculumResponseSchema = z.object({
-  weeks: z.array(CurriculumWeekSchema).length(12)
+  weeks: z.array(CurriculumWeekChallengeSchema).length(12)
 });
 
 export const ProgressSummaryResponseSchema = z.object({
